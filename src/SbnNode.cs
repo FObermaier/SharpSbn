@@ -1,193 +1,442 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading;
-using System.Xml.Serialization;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace SbnSharp
 {
-    public class SbnNode
+    public class SbnNode : IEnumerable<SbnFeature>
     {
-        public int id { get; private set; }
-        public int count;
-        public SbnTree tree;
-        public char split;
-        public SbnNode righttop;
+        private readonly SbnTree _tree;
+        private byte xmin, xmax, ymin, ymax;
 
-        public SbnNode Child1
+        /// <summary>
+        /// Creates an instance of this class
+        /// </summary>
+        /// <param name="tree">The tree this node belongs to</param>
+        /// <param name="nid">The node's id</param>
+        public SbnNode(SbnTree tree, int nid)
         {
-            get
+            _tree = tree;
+            Nid = nid;
+            Full = nid == 1 || nid >= _tree.FirstLeafNodeId;
+        }
+
+        public SbnNode(SbnTree tree, int nid, byte minx, byte miny, byte maxx, byte maxy)
+            :this(tree, nid)
+        {
+            xmin = minx;
+            ymin = miny;
+            xmax = maxx;
+            ymax = maxy;
+        }
+
+        internal void AddBin(SbnBin addBin)
+        {
+            if (FirstBin == null)
+                FirstBin = addBin;
+            else
             {
-                if (id >= tree.FirstLeafId)
-                    return null;
-                return tree.Nodes[(int)id*2];
+                var bin = FirstBin;
+                while (bin.Next != null)
+                    bin = bin.Next;
+                bin.Next = addBin;
             }
         }
 
-        public SbnNode parent;
+        /// <summary>
+        /// Gets the id of the current node
+        /// </summary>
+        public int Nid { get; private set; }
+
+        /// <summary>
+        /// The first bin associated with this node
+        /// </summary>
+        internal SbnBin FirstBin { get; set; }
+
+        /// <summary>
+        /// The last bin associated with this node
+        /// </summary>
+        internal SbnBin LastBin
+        {
+            get
+            {
+                if (FirstBin == null)
+                    return null;
+
+                var res = FirstBin;
+                while (res.Next != null)
+                    res = res.Next;
+                return res;
+            }
+        }
+
+        /// <summary>
+        /// Gets the parent of this node
+        /// </summary>
         public SbnNode Parent
         {
             get
             {
-                if (id == 1)
+                if (Nid == 1)
                     return null;
 
-                var firstSiblingId = (int)id - (int)id%2;
-                return tree.Nodes[firstSiblingId/2];
+                var firstSiblingId = Nid - Nid % 2;
+                return _tree.Nodes[firstSiblingId / 2];
             }
         }
 
-    
-        public SbnNode leftbottom;
+        /// <summary>
+        /// Gets the first child of this node
+        /// </summary>
+        public SbnNode Child1
+        {
+            get
+            {
+                if (Nid >= _tree.FirstLeafNodeId)
+                    return null;
+                return _tree.Nodes[Nid * 2];
+            }
+        }
+
+        /// <summary>
+        /// Gets the second child of this node
+        /// </summary>
         public SbnNode Child2
         {
             get
             {
-                if (id >= tree.FirstLeafId)
+                if (Nid >= _tree.FirstLeafNodeId)
                     return null;
-                return tree.Nodes[(int)id * 2 + 1];
+                return _tree.Nodes[Nid * 2 + 1];
             }
         }
 
-        public SbnNode sibling;
-
+        /// <summary>
+        /// Gets the sibling of this node
+        /// </summary>
         public SbnNode Sibling
         {
             get
             {
-                if (id == 1)
+                if (Nid == 1)
                     return null;
 
-                if (id - id%2 == id)
-                    return tree.Nodes[(int)id + 1];
-                return tree.Nodes[(int) id - 1];
+                if (Nid - Nid % 2 == Nid)
+                    return _tree.Nodes[Nid + 1];
+                return _tree.Nodes[Nid - 1];
             }
         }
 
-        public /*int*/ byte splitcoord;
-        public List<SbnFeature> features;
-        public List<SbnFeature> holdfeatures;
-        public bool full;
-        public /*int*/ byte xmin, xmax, ymin, ymax;
+        internal bool Full { get; private set; }
 
-        internal SbnNode(SbnTree tree, int u)
-        {
-            this.tree = tree;
-            id = u;
-            count = 0;
-            features = new List<SbnFeature>();
-            holdfeatures = new List<SbnFeature>();
-            full = false;
-            sibling = null;
-        }
+        internal int Level { get { return (int) Math.Log(Nid, 2) + 1; }}
 
-        public override string ToString()
+        public int FeatureCount
         {
-            return string.Format("[Node {0}: ({1}-{2}, {3}-{4})/{5}]", id, xmin, xmax, ymin, ymax, splitcoord);
-        }
+            get
+            {
+                if (FirstBin == null)
+                    return 0;
 
-        public void AddSplitCoord()
-        {
-            int mid;
-            if (split == 'x')
-                mid = /*(int)*/ (byte)((xmin + xmax)/2.0) + 1;
-            else
-                mid = /*(int)*/ (byte)((ymin + ymax) / 2.0) + 1;
-            splitcoord = (byte)(mid - mid%2);
+                var count = 0;
+                var bin = FirstBin;
+                while (bin != null)
+                {
+                    count += bin.NumFeatures;
+                    bin = bin.Next;
+                }
+                return count;
+            }
         }
 
         public void AddChildren()
         {
-            // first child node
-            var rt = tree.Nodes[(int)id*2];
-            rt.tree = tree;
-            if (split == 'x')
-            {
-                rt.xmin = /*(int)*/ (byte)(splitcoord + 1);
-                rt.xmax = xmax;
-                rt.ymin = ymin;
-                rt.ymax = ymax;
-                rt.split = 'y';
-                rt.AddSplitCoord();
-            }
-            else
-            {
-                rt.xmin = xmin;
-                rt.xmax = xmax;
-                rt.ymin = /*(int)*/ (byte)(splitcoord + 1);
-                rt.ymax = ymax;
-                rt.split = 'x';
-                rt.AddSplitCoord(); 
-            }
-            rt.parent = this;
-            righttop = rt;
-            
-            //second child node
-            var lb = tree.Nodes[(int) id*2 + 1];
-            lb.tree = tree;
-            if (split == 'x')
-            {
-                lb.xmax = /*(int)*/ splitcoord;
-                lb.xmin = xmin;
-                lb.ymin = ymin;
-                lb.ymax = ymax;
-                lb.split = 'y';
-                lb.AddSplitCoord();
-            }
-            else
-            {
-                lb.xmin = xmin;
-                lb.xmax = xmax;
-                lb.ymax = /*(int)*/ splitcoord;
-                lb.ymin = ymin;
-                lb.split = 'x';
-                lb.AddSplitCoord();
-            }
-            lb.parent = this;
-            leftbottom = lb;
-            lb.sibling = rt;
-            rt.sibling = lb;
+            if (Nid >= _tree.FirstLeafNodeId) return;
+
+            var splitBounds = GetSplitBounds(1);
+            var childId = Nid*2;
+            _tree.Nodes[childId] = new SbnNode(_tree, childId++, splitBounds[0], splitBounds[1], splitBounds[2], splitBounds[3]);
+            //Child1.SetBounds(GetSplitBounds(1));
+            Child1.AddChildren();
+
+            splitBounds = GetSplitBounds(2);
+            _tree.Nodes[childId] = new SbnNode(_tree, childId, splitBounds[0], splitBounds[1], splitBounds[2], splitBounds[3]);
+            //Child2.SetBounds(GetSplitBounds(2));
+            Child2.AddChildren();
         }
 
-        public void Grow()
+        private void SetBounds(byte[] getSplitBounds)
         {
-            //recursively grow the tree
-            if (id >= tree.FirstLeafId) 
-                return;
-            AddChildren();
-            righttop.Grow();
-            leftbottom.Grow();
+            xmin = getSplitBounds[0];
+            ymin = getSplitBounds[1];
+            xmax = getSplitBounds[2];
+            ymax = getSplitBounds[3];
         }
+
+        private byte GetSplitOridnate(int splitAxis)
+        {
+            var mid = (splitAxis == 1)
+                ? /*(int)*/ (byte)((xmin + xmax) / 2.0 + 1)
+                : /*(int)*/ (byte)((ymin + ymax) / 2.0 + 1);
+
+            return (byte) (mid - mid%2);
+        }
+
+        private byte[] GetSplitBounds(int childIndex)
+        {
+            var splitAxis = Level % 2;// == 1 ? 'x' : 'y';
+
+            var mid = GetSplitOridnate(splitAxis);
+
+            var res = new[] {xmin, ymin, xmax, ymax};
+            switch (splitAxis)
+            {
+                case 1: // x-ordinate
+                    switch (childIndex)
+                    {
+                        case 1:
+                            res[0] = (byte)(mid + 1);
+                            break;
+                        case 2:
+                            res[2] = mid;
+                            break;
+                    }
+                    break;
+                case 0: // y-ordinate
+                    switch (childIndex)
+                    {
+                        case 1:
+                            res[1] = (byte)(mid + 1);
+                            break;
+                        case 2:
+                            res[3] = mid;
+                            break;
+                    }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("childIndex");
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// function to count all features in this node and all child nodes
+        /// </summary>
+        /// <returns>The number of features in all this and all child nodes</returns>
+        public int CountAllFeatures()
+        {
+            var res = FeatureCount;
+            if (Nid < _tree.FirstLeafNodeId)
+                res += Child1.CountAllFeatures() + Child2.CountAllFeatures();
+            return res;
+        }
+
+        public IEnumerable<uint> QueryFids(byte minx, byte miny, byte maxx, byte maxy)
+        {
+            if (ContainedBy(minx, miny, maxx, maxy))
+                return GetAllFidsInNode();
+
+            var fids = new List<uint>();
+            foreach (var feature in this)
+            {
+                if (feature.Intersects(minx, maxx, miny, maxy))
+                    fids.Add(feature.Fid);
+            }
+
+            if (Nid < _tree.FirstLeafNodeId)
+            {
+                fids.AddRange(Child1.QueryFids(minx, miny, maxx, maxy));
+                fids.AddRange(Child2.QueryFids(minx, miny, maxx, maxy));
+            }
+            return fids;
+        }
+
+        private IEnumerable<uint> GetAllFidsInNode()
+        {
+            var res = new List<uint>();
+            var bin = FirstBin;
+            while (bin != null)
+            {
+                res.AddRange(bin.GetAllFidsInBin());
+                bin = bin.Next;
+            }
+            return res;
+        }
+
+        public bool HasChildren
+        {
+            get
+            {
+                if (Nid >= _tree.FirstLeafNodeId)
+                    return false;
+
+                return CountAllFeatures() > 0;
+            }
+        }
+
+        public override string ToString()
+        {
+            return string.Format("[Node {0}: ({1}-{2},{3}-{4})/{5}]", Nid, xmin, xmax, ymin, ymax, GetSplitOridnate(Level%2));
+        }
+
+        /// <summary>
+        /// Intersection predicate function
+        /// </summary>
+        /// <param name="minX">lower x-ordinate</param>
+        /// <param name="minY">lower y-ordinate</param>
+        /// <param name="maxX">upper x-ordinate</param>
+        /// <param name="maxY">upper y-ordinate</param>
+        /// <returns><value>true</value> if this node's bounding box intersect with the bounding box defined by <paramref name="minX"/>, <paramref name="maxX"/>, <paramref name="minY"/> and <paramref name="maxY"/>, otherwise <value>false</value></returns>
+        internal bool Intersects(byte minX, byte minY, byte maxX, byte maxY)
+        {
+            return !(minX > xmax || maxX < xmin || minY > ymax || maxY < ymin);
+        }
+
+        /// <summary>
+        /// Contains predicate function
+        /// </summary>
+        /// <param name="minX">lower x-ordinate</param>
+        /// <param name="minY">lower y-ordinate</param>
+        /// <param name="maxX">upper x-ordinate</param>
+        /// <param name="maxY">upper y-ordinate</param>
+        /// <returns><value>true</value> if this node's bounding box contains the bounding box defined by <paramref name="minX"/>, <paramref name="maxX"/>, <paramref name="minY"/> and <paramref name="maxY"/>, otherwise <value>false</value></returns>
+        internal bool Contains(byte minX, byte minY, byte maxX, byte maxY)
+        {
+            return minX >= xmin && maxX <= xmax &&
+                   minY >= ymin && maxY <= ymax;
+        }
+
+        /// <summary>
+        /// Contains predicate function
+        /// </summary>
+        /// <param name="minX">lower x-ordinate</param>
+        /// <param name="minY">lower y-ordinate</param>
+        /// <param name="maxX">upper x-ordinate</param>
+        /// <param name="maxY">upper y-ordinate</param>
+        /// <returns><value>true</value> if this node's bounding box contains the bounding box defined by <paramref name="minX"/>, <paramref name="maxX"/>, <paramref name="minY"/> and <paramref name="maxY"/>, otherwise <value>false</value></returns>
+        internal bool ContainedBy(byte minX, byte minY, byte maxX, byte maxY)
+        {
+            return xmin >= minX && xmax <= maxX &&
+                   xmin >= minY && xmax <= minY;
+        }
+        public IEnumerator<SbnFeature> GetEnumerator()
+        {
+            return new SbnFeatureEnumerator(FirstBin);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        private class SbnFeatureEnumerator : IEnumerator<SbnFeature>
+        {
+            private SbnBin _firstBin;
+            private SbnBin _currentBin;
+
+            private int _index = -1;
+            public SbnFeatureEnumerator(SbnBin firstBin)
+            {
+                if (firstBin != null)
+                    _firstBin = firstBin.Clone();
+            }
+
+            public void Dispose()
+            {
+                _firstBin = null;
+            }
+
+            public bool MoveNext()
+            {
+                // We don't have a bin at all!
+                if (_firstBin == null) return false;
+
+                // We were resetted or havn't started
+                if (_index == -1)
+                    _currentBin = _firstBin;
+
+                // did we reach the end!
+                if (_index  == _currentBin.NumFeatures)
+                    return false;
+
+                // Increment
+                _index++;
+
+                // Did we reach the end of the bin now? 
+                if (_index == 100)
+                {
+                    //If so move to next
+                    _currentBin = _currentBin.Next;
+                    //was there another one?
+                    if (_currentBin == null) return false;
+                    _index = 0;
+                }
+
+                return _index < _currentBin.NumFeatures;
+            }
+
+            public void Reset()
+            {
+                _index = -1;
+                _currentBin = null;
+            }
+
+            public SbnFeature Current
+            {
+                get { return _index == -1 ? new SbnFeature() : _currentBin[_index]; }
+            }
+
+            object IEnumerator.Current
+            {
+                get { return Current; }
+            }
+        }
+#if DEBUG
+        public bool VerifyBins()
+        {
+            
+            foreach (var feature in this)
+            {
+                if (!Contains(feature.MinX, feature.MinY, feature.MaxX, feature.MaxY))
+                    return false;
+            }
+
+            return true;
+        }
+#endif
 
         public void Insert(SbnFeature feature)
         {
             // if this is leaf, just take the feature
-            if (id >= tree.FirstLeafId)
+            if (Nid >= _tree.FirstLeafNodeId)
             {
-                features.Add(feature);
+                AddFeature(feature);
                 return;
             }
 
             // it takes 8 features to split a node
             // so we'll hold 8 features first
-            if (id > 1)
+            if (Nid > 1)
             {
-                if (!full)
+                if (!Full)
                 {
-                    if (holdfeatures.Count < 8)
+                    
+                    if (FeatureCount < 8)
                     {
-                        holdfeatures.Add(feature);
+                        AddFeature(feature);
                         return;
                     }
-                    if (holdfeatures.Count == 8)
+                    if (FeatureCount == 8)
                     {
-                        full = true;
-                        holdfeatures.Add(feature);
-                        foreach (var holdfeature in holdfeatures)
+                        var bin = FirstBin;
+                        FirstBin = new SbnBin();
+                        Full = true;
+                        bin.AddFeature(feature);
+                        for (var i = 0; i < 9; i ++)
                         {
-                            Insert(holdfeature);
+                            Insert(bin[i]);
                         }
-                        holdfeatures.Clear();
                         return;
                     }
                 }
@@ -196,7 +445,8 @@ namespace SbnSharp
 
             // The node is split so we can sort features
             int min, max; //, smin, smax;
-            if (split == 'x')
+            var splitAxis = Level%2;
+            if (splitAxis == 1)
             {
                 min = feature.MinX;
                 max = feature.MaxX;
@@ -210,67 +460,26 @@ namespace SbnSharp
                 //smin = feature.MinX;
                 //smax = feature.MaxX;
             }
+            var seam = GetSplitOridnate(splitAxis);
 
             // Grab features on the seam we can't split
-            if (min <= splitcoord && max > splitcoord)
+            if (min <= seam && max > seam)
             {
-                features.Add(feature);
-                return;
+                AddFeature(feature);
             }
-            PassFeature(feature);
+
+            else if (min < seam)
+                Child2.Insert(feature);
+            else
+                Child1.Insert(feature);
         }
 
-        public List<SbnFeature> AllFeatures()
-        {
-            // return all the features in the node
-            if (id >= tree.FirstLeafId)
-                return features;
-            if (id == 1)
-                return features;
-            if (!full) //holdfeatures.Count <= 8)
-                return holdfeatures;
-            return features;
-        }
-
-
-        /// <summary>
-        /// Get the number of features
-        /// </summary>
-        public int Count
-        {
-            get
-            {
-                if (id >= tree.FirstLeafId)
-                    return features.Count;
-
-                var tmpCount = id == 1
-                    ? features.Count
-                    : !full ? holdfeatures.Count : features.Count;
-                
-                return tmpCount + righttop.Count + leftbottom.Count;
-            }
-        }
-
-        /// <summary>
-        /// Method to get the number of features of this node and its siblings
-        /// </summary>
-        /// <returns></returns>
-        public int SiblingFeatureCount()
-        {
-            // return the number of features of a node and its sibling
-            return AllFeatures().Count + sibling.AllFeatures().Count;
-        }
-
-
-        /// <summary>
-        /// Method to pass a feature to the base nodes
-        /// </summary>
-        /// <param name="feature"></param>
-        private void PassFeature(SbnFeature feature)
+        private void PassFeature(SbnFeature feature, byte fmin, byte fmax, byte splitOrdinate)
         {
             // pass the feature to a child node
             int min, max;
-            if (split == 'x')
+            var splitAxis = Level%2;
+            if (splitAxis == 1)
             {
                 min = feature.MinX;
                 max = feature.MaxX;
@@ -280,91 +489,36 @@ namespace SbnSharp
                 min = feature.MinY;
                 max = feature.MaxY;
             }
-            if (min < splitcoord)
+            if (fmin < GetSplitOridnate(splitAxis))
             {
-                leftbottom.Insert(feature);
+                //leftbottom.Insert(feature);
+                Child2.Insert(feature);
             }
             else
             {
-                righttop.Insert(feature);
+                //righttop.Insert(feature);
+                Child1.Insert(feature);
             }
         }
 
-        public IEnumerable<uint> QueryFeatureIds(byte minX, byte minY, byte maxX, byte maxY)
+        private void AddFeature(SbnFeature feature)
         {
-            /*
-            if (Contains(minX, minY, maxX, maxY))
-            {
-                var res = new List<uint>(Count);
-                res.AddRange(features.Select(feature => feature.Fid));
-                res.AddRange(holdfeatures.Select(feature => feature.Fid));
-                res.AddRange(righttop.QueryFeatureIds());
-            }
-             */
+            if (FeatureCount % 100 == 0)
+                AddBin(new SbnBin());
 
-            foreach (var feature in features)
-            {
-                if (feature.Intersects(minX, maxX, minY, maxY))
-                    yield return feature.Fid;
-            }
+            var addBin = FirstBin;
+            while (addBin.NumFeatures == 100)
+                addBin = addBin.Next;
 
-            // If we are at the leaf level, we don't have any holdfeatures anymore
-            if (id >= tree.FirstLeafId)
-                yield break;
-
-            foreach (var feature in holdfeatures)
-            {
-                if (feature.Intersects(minX, maxX, minY, maxY))
-                    yield return feature.Fid;
-            }
-
-            if (righttop.Intersects(minX, minY, maxX, maxY))
-            {
-                foreach (var feature in righttop.QueryFeatureIds(minX, minY, maxX, maxY))
-                {
-                    yield return feature;
-                }
-            }
-
-            if (leftbottom.Intersects(minX, minY, maxX, maxY))
-            {
-                foreach (var feature in leftbottom.QueryFeatureIds(minX, minY, maxX, maxY))
-                {
-                    yield return feature;
-                }
-            }
+            addBin.AddFeature(feature);
         }
 
-        public void Remove(SbnFeature feature)
+#if VERBOSE
+        public string ToStringVerbose()
         {
-            if (features.Contains(feature))
-            {
-                features.Remove(feature);
-                return;
-            }
-            if (holdfeatures.Contains(feature))
-            {
-                features.Remove(feature);
-                return;
-            }
-
-            if (righttop.Intersects(feature.MinX, feature.MinY, feature.MaxX, feature.MaxY))
-            {
-                righttop.Remove(feature);
-                return;
-            }
-
-            if (leftbottom.Intersects(feature.MinX, feature.MinY, feature.MaxX, feature.MaxY))
-            {
-                leftbottom.Remove(feature);
-                return;
-            }
+            return string.Format("{0,5} {1,4}-{2,4} {3,4}-{4,4} {5} {6,4} {7,1}", Nid, xmin, xmax, ymin, ymax, Full ? 1 : 0, Full ? FeatureCount : 0, Full ? 0 : FeatureCount);
         }
+#endif
 
-        internal bool Intersects(byte minX, byte minY, byte maxX, byte maxY)
-        {
-            return !(minX > xmax || maxX < xmin || minY > ymax || maxY < ymin);
-        }
     }
-
 }

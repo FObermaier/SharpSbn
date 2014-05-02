@@ -34,15 +34,24 @@ namespace SbnSharp
         /// <summary>
         /// Creates an instance of this class
         /// </summary>
-        /// <param name="featureCount">The number of features</param>
+        /// <param name="numRecords">The number of features</param>
         /// <param name="extent">The extent</param>
-        public SbnHeader(int featureCount, Envelope extent)
+        public SbnHeader(int numRecords, Envelope extent)
         {
-            NumRecords = featureCount;
+            NumRecords = numRecords;
             XRange = Interval.Create(extent.MinX, extent.MaxX);
             YRange = Interval.Create(extent.MinY, extent.MaxY);
             ZRange = Interval.Create();
             MRange = Interval.Create();
+        }
+
+        public SbnHeader(int numRecords, Interval xInterval, Interval yInterval, Interval zInterval, Interval mInterval)
+        {
+            NumRecords = numRecords;
+            XRange = xInterval;
+            YRange = yInterval;
+            ZRange = zInterval;
+            MRange = mInterval;
         }
 
         /// <summary>

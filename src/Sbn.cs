@@ -1,3 +1,5 @@
+#define VERBOSE
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,11 +7,27 @@ using System.Linq;
 
 namespace SbnSharp
 {
+    public class Sbx
+    {
+        private readonly SbnHeader _sbxHeader = new SbnHeader();
+
+        public Sbx(BinaryReader reader)
+        {
+            _sbxHeader .Read(reader);
+            var i = 1;
+            while (reader.BaseStream.Position < _sbxHeader.FileLength)
+            {
+                Console.WriteLine("{0,5} {1,6} {2,6}", i++, reader.ReadInt32BE(), reader.ReadInt32BE());
+            }
+        }
+    }
+
     public class Sbn
     {
         //private FileStream _sbn;
  
-        private readonly List<SbnBin> _bins = new List<SbnBin>();
+        private readonly List<OldSbnBin> _bins = new List<OldSbnBin>();
+        private OldSbnBin[] nodeToBin;
         private readonly SbnHeader _header = new SbnHeader();
 
         /// <summary>
@@ -45,6 +63,8 @@ namespace SbnSharp
 
         private int GetNumBinHeaderRecords()
         {
+            return nodeToBin.Length - 1;
+            /*
             var count = 0;
             foreach (var bin in _bins.Skip(1))
             {
@@ -57,6 +77,7 @@ namespace SbnSharp
                 }
             }
             return count;
+             */
         }
 
         private void Read(BinaryReader reader)
@@ -86,17 +107,21 @@ namespace SbnSharp
 
                 var recNum = reader.ReadUInt32BE();
                 var recLen = reader.ReadInt32BE() * 2;
+            var numNodes = recLen/8;
+            nodeToBin = new OldSbnBin[numNodes+1];
+
             // Add convenience bin    
-            var b = new SbnBin(1);
+            var b = new OldSbnBin(1);
             _bins.Add(b);
             var count = 0;
-                for (var i = 0; i < recLen/8; i++)
+                for (var i = 0; i < numNodes; i++)
                 {
-                    b = new SbnBin(reader);
+                    b = new OldSbnBin(reader);
                     //b.Bid = sr.ReadUInt32();
                     //b.NumFeatures = sr.ReadInt32();
                     if (b.Bid > 0)
                     {
+                        nodeToBin[i + 2] = b;
                         _bins.Add(b);
                         NumFeatures += b.NumFeatures;
                     }
@@ -104,15 +129,22 @@ namespace SbnSharp
                     {
                         count++;
                     }
-#if DEBUG
-                    Console.WriteLine("{0}-{1}", b.Bid, b.NumFeatures);
+#if VERBOSE
+                    Console.WriteLine("{0,6} {1, 4}", b.Bid, b.NumFeatures);
 #endif
                 }
+
+#if VERBOSE
+                Console.WriteLine("");
+#endif
 
             //_bins.Sort();
                 while (stream.Position < _header.FileLength)
                 {
                     var binId = reader.ReadInt32BE();
+#if VERBOSE
+                    Console.Write("{0, 6}", binId);
+#endif
                     b = GetBin(binId);
                     if (b == null)
                         throw new SbnException("Bin with id " + binId + " not found");
@@ -156,7 +188,7 @@ namespace SbnSharp
 
         }
 
-        internal SbnBin GetBin(int binId)
+        internal OldSbnBin GetBin(int binId)
         {
             while (true)
             {
@@ -255,22 +287,36 @@ namespace SbnSharp
             sbnsw.WriteBE(1);
             sbnsw.WriteBE(recLen);
 
-            sbxsw.WriteBE(100);
+            sbxsw.WriteBE(100/2);
             sbxsw.WriteBE(recLen + 2);
+            for (var i = 1; i < nodeToBin.Length; i++)
+            {
+                if (nodeToBin[i] == null)
+                {
+                    sbnsw.Write(-1);
+                    sbnsw.Write(0);
+                }
+                else
+                {
+                    nodeToBin[i].WriteHeader(sbnsw);
+                }
+            }
+            /*
             foreach (var b in _bins.Skip(1))
             {
+                
                 b.WriteHeader(sbnsw);
-            }
+            }*/
 
             // write actual bins
             foreach (var b in _bins.Skip(1))
             {
                 if (b.Bid <= 0) continue;
 
-                sbxsw.WriteBE((int) sbnsw.BaseStream.Position);
-                sbxsw.WriteBE(b.NumFeatures*2);
+                //sbxsw.WriteBE((int) sbnsw.BaseStream.Position/2);
+                //sbxsw.WriteBE(b.NumFeatures*2);
                 
-                b.Write(sbnsw);
+                b.Write(sbnsw, sbxsw);
 
                 //sbnsw.Write(b.Bid);
                 //sbnsw.Write(b.NumFeatures*4);

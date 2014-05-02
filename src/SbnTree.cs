@@ -1,103 +1,136 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections;
+using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using GeoAPI.DataStructures;
 using GeoAPI.Geometries;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace SbnSharp
 {
     public class SbnTree
     {
-        /// <summary>
-        /// Method to create a tree from a collection of
-        /// </summary>
-        /// <param name="idExtents"></param>
-        /// <returns></returns>
-        public static SbnTree Create(ICollection<Tuple<uint, Envelope>> idExtents)
+        public static SbnTree Load(string sbnFilename)
         {
-            var extent = GetExtents(idExtents);
-            var sbnTree = new SbnTree(idExtents.Count, extent);
-            foreach (var idExtent in idExtents)
+            if (string.IsNullOrEmpty(sbnFilename))
+                throw new ArgumentNullException("sbnFilename");
+
+            if (!File.Exists(sbnFilename))
+                throw new FileNotFoundException("File not found", sbnFilename);
+
+            using (var stream = new FileStream(sbnFilename, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                sbnTree.Insert(CreateFeature(extent, idExtent));
+                return Load(stream);
+            }
+        }
+
+        public static SbnTree Load(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException("stream");
+
+            using (var reader = new BinaryReader(stream))
+            {
+                return new SbnTree(reader);
+            }
+        }
+
+        private readonly SbnHeader _header = new SbnHeader();
+        internal SbnNode[] Nodes;
+
+        internal int LastLeafNodeId { get { return FirstLeafNodeId*2-1; }}
+
+        private readonly HashSet<uint> _featureIds;
+
+        /// <summary>
+        /// Private preparation of the tree
+        /// </summary>
+        private SbnTree()
+        {
+            _featureIds = new HashSet<uint>();
+        }
+
+        /// <summary>
+        /// Creates the tree reading data from the <paramref name="reader"/>
+        /// </summary>
+        /// <param name="reader">The reader to use</param>
+        private SbnTree(BinaryReader reader)
+            : this()
+        {
+            _header = new SbnHeader();
+            _header.Read(reader);
+
+            BuildTree(_header.NumRecords);
+
+            if (reader.ReadUInt32BE() != 1)
+                throw new SbnException("Invalid format, expecting 1");
+
+            var maxNodeId = reader.ReadInt32BE() / 4;
+            var ms = new MemoryStream(reader.ReadBytes(maxNodeId * 8));
+            using (var msReader = new BinaryReader(ms))
+            {
+                var indexNid = 1;
+                while (msReader.BaseStream.Position < msReader.BaseStream.Length)
+                {
+                    var nid = msReader.ReadInt32BE();
+                    var featureCount = msReader.ReadInt32BE();
+
+                    if (nid > 1)
+                    {
+                        var node = Nodes[indexNid];
+                        while (node.FeatureCount < featureCount)
+                        {
+                            var bin = new SbnBin();
+                            bin.Read(reader);
+                            node.AddBin(bin);
+                        }
+                        Debug.Assert(node.VerifyBins());
+                    }
+                    indexNid++;
+                }
             }
 
-            sbnTree.CompactSeamFeatures();
-            return sbnTree;
+            //Gather all feature ids
+            GatherFids();
+
+            //Assertions
+            Debug.Assert(reader.BaseStream.Position == reader.BaseStream.Length);
+            Debug.Assert(_featureIds.Count == _header.NumRecords);
         }
 
-        private static SbnFeature CreateFeature(Envelope sfExtent, Tuple<uint, Envelope> idExtent)
+        public SbnTree(SbnHeader header)
+            :this()
         {
-            return new SbnFeature(sfExtent, idExtent.Item1, idExtent.Item2);
+            _header = header;
+            BuildTree(_header.NumRecords);
         }
-
-        private static Envelope GetExtents(IEnumerable<Tuple<uint, Envelope>> idExtents)
-        {
-            var res = new Envelope();
-            foreach (var idExtent in idExtents)
-                res.ExpandToInclude(idExtent.Item2);
-            return res;
-        }
-
-        private SbnHeader _header = new SbnHeader();
-        
-        //https://github.com/drwelby/hasbeen/blob/master/bextree.py
-        internal List<SbnNode> Nodes { get; private set; }
-        private int _levels;
-        private readonly HashSet<uint> _featureIds = new HashSet<uint>();
-
-        internal int FirstLeafId { get; private set; }
-        
-        /// <summary>
-        /// Gets a value indicating the root node
-        /// </summary>
-        public SbnNode Root { get; private set; }
-
-
 
         /// <summary>
-        /// Creates an instance of this class
+        /// Method to collect all f
         /// </summary>
-        /// <param name="featureCount">The initial number of features</param>
-        public SbnTree(int featureCount, Envelope extent)
+        private void GatherFids()
         {
-            BuildTree(featureCount, extent);
-        }
-
-        private void BuildTree(int featureCount, Envelope extent)
-        {
-            _header = new SbnHeader(featureCount, extent);
-            
-            Nodes = new List<SbnNode>();
-            _levels = GetLevels(featureCount);
-            FirstLeafId = (int)Math.Pow(2, _levels - 1);
-
-            for (int i = 0; i < (uint) Math.Pow(2, _levels); i++)
+            foreach (var sbnNode in Nodes.Skip(1))
             {
-                var n = new SbnNode(this, i);
-                Nodes.Add(n);
+                if (sbnNode == null) continue;
+
+                foreach (var queryOid in sbnNode.QueryFids(0, 0, 255, 255))
+                    _featureIds.Add(queryOid);
             }
-            Root = Nodes[1];
-            //Root.id = 1;
-            //Root.tree = this;
-            Root.split = 'x';
-            Root.xmin = 0;
-            Root.xmax = 255;
-            Root.ymin = 0;
-            Root.ymax = 255;
-            Root.AddSplitCoord();
-            Root.Grow();
         }
 
-        private static int GetLevels(int featureCount)
+        /// <summary>
+        /// Method to build the tree
+        /// </summary>
+        /// <param name="numFeatures">The number of features in the tree</param>
+        private void BuildTree(int numFeatures)
         {
-            var levels = (int)Math.Log(((featureCount - 1) / 8.0 + 1), 2) + 1;
-            if (levels < 2) levels = 2;
-            if (levels > 15) levels = 15;
-
-            return levels;
+            NumLevels = GetNumberOfLevels(numFeatures);
+            FirstLeafNodeId = (int)Math.Pow(2, NumLevels - 1);
+            CreateNodes((int)Math.Pow(2, NumLevels));
         }
 
         /// <summary>
@@ -111,191 +144,289 @@ namespace SbnSharp
             _featureIds.Add(feature.Fid);
         }
 
-        internal List<SbnBin> ToBins()
+        /// <summary>
+        /// Gets the number of levels in this tree
+        /// </summary>
+        internal int NumLevels { get; private set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        internal int FeatureCount { get { return Root.CountAllFeatures(); } }
+
+        /// <summary>
+        /// Gets a value indicating the id of the first leaf
+        /// </summary>
+        internal int FirstLeafNodeId { get; private set; }
+
+        private void CreateNodes(int numNodes)
         {
-            var bins = new List<SbnBin>();
-            var bid = 0;
-            var b = new SbnBin(bid++);
-            bins.Add(b);
-            foreach (var node in Nodes)
-            {
-                b = new SbnBin(bid++);
-                b.AddRange(node.AllFeatures());
-                //b.Features = node.AllFeatures();
-                bins.Add(b);
-            }
-            return bins;
+            Nodes = new SbnNode[numNodes];
+            Nodes[1] = new SbnNode(this, 1, 0, 0, 255, 255);
+            Nodes[1].AddChildren();
         }
+
+        private static int GetNumberOfLevels(int featureCount)
+        {
+            var levels = (int)Math.Log(((featureCount - 1) / 8.0 + 1), 2) + 1;
+            if (levels < 2) levels = 2;
+            if (levels > 15) levels = 15;
+
+            return levels;
+        }
+
+        internal SbnNode Root { get { return Nodes[1]; } }
+
+        public void Save(string sbnName)
+        {
+            if (string.IsNullOrEmpty(sbnName))
+                throw new ArgumentNullException("sbnName");
+
+            var sbxName = Path.ChangeExtension(sbnName, "sbx");
+
+            if (File.Exists(sbnName)) File.Delete(sbnName);
+            if (File.Exists(sbxName)) File.Delete(sbxName);
+
+            using (var sbnStream = new FileStream(sbnName, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var sbnWriter = new BinaryWriter(sbnStream))
+            using (var sbxStream = new FileStream(sbxName, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var sbxWriter = new BinaryWriter(sbxStream))
+                Write(sbnWriter, sbxWriter);
+        }
+
+        private void GetHeaderValues(out int numBins, out int lastBinIndex)
+        {
+            numBins = 0;
+            lastBinIndex = 0;
+            for (var i = 1; i < Nodes.Length; i++)
+            {
+                if (Nodes[i].FeatureCount > 0)
+                {
+                    var numBinsForNode = (int)Math.Ceiling(Nodes[i].FeatureCount/100d);
+                    lastBinIndex = i;
+                    numBins += numBinsForNode;
+                }
+            }
+        }
+
+        private void Write(BinaryWriter sbnsw, BinaryWriter sbxsw)
+        {
+            // Gather header data
+            int numBins, lastBinIndex;
+            GetHeaderValues(out numBins, out lastBinIndex);
+            numBins++;
+
+            // first bin descriptors
+            var numBinHeaderRecords = lastBinIndex;
+            var binHeaderSize = (numBinHeaderRecords) * 8;
+
+            // then bins with features
+            var usedBinSize = numBins * 8;
+
+            var sbxSize = 100 + usedBinSize;
+            var sbnSize = 100 + binHeaderSize + usedBinSize + FeatureCount*8;
+
+            // Write headers
+            _header.Write(sbnsw, sbnSize);
+            _header.Write(sbxsw, sbxSize);
+
+            // sbn and sbx records
+            // first create bin descriptors record
+            var recLen = (numBinHeaderRecords) * 4;
+            sbnsw.WriteBE(1);
+            sbnsw.WriteBE(recLen);
+
+            sbxsw.WriteBE(50);
+            sbxsw.WriteBE(recLen);
+
+            WriteBinHeader(sbnsw, lastBinIndex);
+
+            WriteBins(sbnsw, sbxsw);
+        }
+
+        /// <summary>
+        /// Method to write the bin header to the sbn file
+        /// </summary>
+        /// <param name="sbnsw"></param>
+        /// <param name="lastBinIndex"></param>
+        private void WriteBinHeader(BinaryWriter sbnsw, int lastBinIndex)
+        {
+            for (var i = 1; i <= lastBinIndex; i++)
+            {
+                if (Nodes[i].FeatureCount > 0)
+                {
+                    sbnsw.WriteBE(Nodes[i].Nid+1);
+                    sbnsw.WriteBE(Nodes[i].FeatureCount);
+                }
+                else
+                {
+                    sbnsw.WriteBE(-1);
+                    sbnsw.WriteBE(0);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Method to write the bins
+        /// </summary>
+        /// <param name="sbnWriter">The writer for the sbn file</param>
+        /// <param name="sbxWriter">The writer for the sbx file</param>
+        private void WriteBins(BinaryWriter sbnWriter, BinaryWriter sbxWriter)
+        {
+            var binid = 2;
+            for (var i = 1; i < Nodes.Length; i++)
+            {
+                if (Nodes[i].FirstBin != null)
+                    Nodes[i].FirstBin.Write(ref binid, sbnWriter, sbxWriter); 
+            }
+
+            /*
+            using (var binIt = new SbnBinEnumerator(this)) 
+            while (binIt.MoveNext())
+            {
+                binIt.Current.Write(ref binid, sbnWriter, sbxWriter);
+            }*/
+        }
+
+#if DEBUG
+        public bool VerifyNodes()
+        {
+
+            foreach (var node in Nodes.Skip(1))
+            {
+                if (!node.VerifyBins())
+                    return false;
+            }
+            return true;
+        }
+#endif
+
+
+        //private class SbnBinEnumerator : IEnumerator<SbnBin>
+        //{
+        //    private readonly SbnTree _tree;
+        //    private SbnNode _currentNode;
+        //    private SbnBin _currentBin, _lastBin;
+        //    private bool _finished;
+
+        //    public SbnBinEnumerator(SbnTree tree)
+        //    {
+        //        _tree = tree;
+        //    }
+
+        //    public void Dispose()
+        //    {
+        //    }
+
+        //    public bool MoveNext()
+        //    {
+        //        if (_finished)
+        //            return false;
+
+        //        _lastBin = _currentBin;
+        //        var res = SeekNextBin(1);
+        //        Debug.Assert(!ReferenceEquals(_lastBin, _currentBin));
+        //        return res;
+        //    }
+
+        //    bool SeekNextBin(int depth)
+        //    {
+        //        Debug.Assert(depth < 1000);
+
+        //        if (_currentNode == null)
+        //        {
+        //            _currentNode = _tree.Nodes[1];
+        //            if (_currentNode.FirstBin == null)
+        //                return SeekNextBin(depth+1);
+        //        }
+
+        //        if (_currentBin == null)
+        //        {
+        //            _currentBin = _currentNode.FirstBin;
+        //            if (_currentBin == null)
+        //            {
+        //                if (_currentNode.Nid == _tree.LastLeafNodeId)
+        //                {
+        //                    _finished = true;
+        //                    return false;
+        //                }
+        //                _currentNode = _tree.Nodes[_currentNode.Nid + 1];
+        //                return SeekNextBin(depth + 1);
+        //            }
+        //            return true;
+
+
+        //        }
+
+        //        _currentBin = _currentBin.Next;
+        //        if (_currentBin == null)
+        //        {
+        //            if (_currentNode.Nid == _tree.LastLeafNodeId)
+        //            {
+        //                _finished = true;
+        //                return false;
+        //            }
+
+        //            _currentNode = _tree.Nodes[_currentNode.Nid + 1];
+        //            return SeekNextBin(depth + 1);
+        //        }
+
+        //        return true;
+        //    }
+
+        //    public void Reset()
+        //    {
+        //        _currentNode = null;
+                
+        //        _currentBin = null;
+        //        _finished = false;
+        //    }
+
+        //    public SbnBin Current { get { return _currentBin; } }
+
+        //    object IEnumerator.Current
+        //    {
+        //        get { return Current; }
+        //    }
+        //}
 
         public int FeaturesInLevel(int level)
         {
             // return the number of features in a level
-            var start = (int) Math.Pow(2, level - 1);
-            var end = (int) 2*start - 1;
+            var start = (int)Math.Pow(2, level - 1);
+            var end = 2 * start - 1;
             var featureCount = 0;
-            foreach (var n in Nodes.GetRange(start, end + 1))
-                featureCount += n.features.Count;
+            foreach (var n in Nodes.GetRange(start, end - start + 1))
+                featureCount += n.FeatureCount;
             return featureCount;
         }
 
-        private void CompactSeamFeatures()
+        /// <summary>
+        /// Method to describe the tree
+        /// </summary>
+        /// <param name="out">The textwriter to use</param>
+        public void DescribeTree(TextWriter @out)
         {
-            // the mystery algorithm - compaction? optimization? obfuscation?
-            if (_levels < 4)
-                return;
+#if VERBOSE
+            if (@out == null)
+                throw new ArgumentNullException("out");
 
-            if (_levels > 4)
+            @out.WriteLine("#Description");
+            @out.WriteLine("#            f=full [0, 1]");
+            @out.WriteLine("#                sf=features on seam");
+            @out.WriteLine("#                   h=holdfeatures");
+            @out.WriteLine("#level node  f   sf h");
+            for (var i = 1; i <= NumLevels; i++)
             {
-                var start = FirstLeafId/2 - 1;
-                var end = start/8;
-                if (start < 3) start = 3;
-                if (end < 1) end = 1;
-
-                foreach(var node in Nodes.GetRange(start, end, -1))
+                var nodes = GetNodesOfLevel(i);
+                foreach (var node in nodes)
                 {
-                    var id = (int)node.id;
-                    var children = Nodes.GetRange(id*2, 2);
-                    foreach (var child in children)
-                    {
-                        // There are no items to pull up
-                        if (child.Count == 0) continue;
-
-                        var cid = (int) child.id;
-                        var grandchildren = Nodes.GetRange(cid*2, 2);
-                        var gccount = 0;
-                        foreach (var gcnode in grandchildren)
-                            gccount += gcnode.AllFeatures().Count;
-
-                        Debug.WriteLine("Node {0} has {1} GC", id,gccount);
-                        if (gccount == 0)
-                        {
-                            //Debug.WriteLine("Slurping {0} features from node {1}", child.AllFeatures().Count, child.id);
-                            //node.features.AddRange(child.features);
-                            
-                            // this is weird but it works
-                            if (child.AllFeatures().Count < 4)
-                            {
-                                node.features.AddRange(child.AllFeatures());
-                                child.features.Clear();
-                                child.holdfeatures.Clear();
-                            }
-                        }
-                    }
+                    @out.WriteLine("{0,5} {1,5}", i, node.ToStringVerbose());
                 }
             }
-        }
-
-        private void CompactSeamFeatures2()
-        {
-            // another run at the mystery algorithm
-
-            //for node in self.nodes[1:self.firstleafid/4]:
-            var start = FirstLeafId/2 - 1;
-            var end = start/8;
-            if (start < 3) start = 3;
-            if (end < 1) end = 1;
-            
-            //for node in self.nodes[start:end:-1]:
-            for (var i = end; i > start; i--)
-            {
-                var node = Nodes[(int) i];
-
-                //if len(node.features) > 0 and self.levels < 6:
-                //   continue
-                var id = node.id;
-                var children = Nodes.GetRange((int) id*2, 2);
-                var grandchildren = Nodes.GetRange((int) id*4, 4);
-                var gccount = 0;
-                foreach (var gcnode in grandchildren)
-                    gccount += gcnode.AllFeatures().Count;
-                //print "Node %s has %s GC" % (id,gccount)
-                if (gccount == 0)
-                {
-                    foreach (var cnode in children)
-                    {
-                        if (cnode.AllFeatures().Count + node.features.Count > 8)
-                            continue;
-                        //print "Slurping %s features from node %s" % (len(cnode.features),cnode.id)
-                        node.features.AddRange(cnode.AllFeatures());
-                        //node.features.extend(cnode.features)
-                        cnode.features.Clear();
-                        cnode.holdfeatures.Clear();
-                    }
-                }
-            }
-            // compact unsplit nodes see cities/248
-            return;
-
-            //for node in self.nodes[start:end:-1]:
-            for (var i = end; i > start; i--)
-            {
-                var node = Nodes[(int) i];
-                var level = Math.Ceiling(Math.Log(node.id, 2));
-                var id = node.id;
-                var children = Nodes.GetRange((int) id*2 - 1, 2);
-                children.Reverse();
-                var empty = false;
-                var childrenfeatures = 0;
-                foreach (var child in children)
-                {
-                    //if not child.full:
-                    //    held = True
-                    var cid = (int) child.id;
-                    childrenfeatures += child.features.Count;
-                    var grandchildren = Nodes.GetRange(cid*2, 2);
-                    foreach (var gcnode in grandchildren)
-                    {
-                        if (gcnode.features.Count == 0)
-                            empty = true;
-                    }
-                }
-                //print "Node %s childless: %s" % (cid,empty)
-                Debug.WriteLine("{0} : {1}", empty, childrenfeatures);
-                if (empty && childrenfeatures > 0)
-                {
-                    //node.features.extend(child.features)
-                    foreach (var child in children)
-                    {
-                        if (child.SiblingFeatureCount() < 4 &&
-                            child.SiblingFeatureCount() > 0)
-                            continue;
-                        //if self.featuresinlevel(level) >= 8:
-                        //    return
-                        //print "Slurping %s features from node %s" % (len(child.allfeatures()),child.id)
-                        node.features.AddRange(child.AllFeatures());
-                        //node.full = True
-                        child.features.Clear();
-                        child.holdfeatures.Clear();
-                    }
-                }
-                return;
-            }
-        }
-
-        public void AddFeature(uint fid, IGeometry geometry)
-        {
-            if (_featureIds.Contains(fid))
-                throw new InvalidOperationException("A feature with this id is already present");
-
-            var extent = geometry.EnvelopeInternal;
-            if (!_header.Envelope.Contains(extent) || GetLevels(_header.NumRecords+1) != _levels)
-            {
-                RebuildTree(_header.NumRecords+1, extent);
-            }
-
-            _header.AddFeature(fid, geometry);
-            Root.Insert(ToSbnFeature(fid, geometry));
-        }
-
-        private void RebuildTree(int numFeatures, Envelope extent)
-        {
-            var allFeatures = Root.AllFeatures();
-            
-            BuildTree(numFeatures, extent);
-            foreach (var feature in allFeatures)
-            {
-                Insert(feature);
-            }
+#else
+            throw new NotSupportedException();
+#endif
         }
 
         private SbnFeature ToSbnFeature(uint fid, IGeometry geometry)
@@ -307,22 +438,108 @@ namespace SbnSharp
         {
             return new SbnFeature(_header.Envelope, fid, envelope);
         }
-        public void RemoveFeature(uint fid, IGeometry geometry)
-        {
-            if (!_featureIds.Contains(fid))
-                throw new ArgumentOutOfRangeException("fid", "No feature with this id in tree");
 
-            var feature = ToSbnFeature(fid, geometry);
-            Root.Remove(feature);
-        }
-
-        public IEnumerable<uint> QueryFeatureIds(Envelope extent)
+        public IEnumerable<uint> QueryFids(Envelope extent)
         {
             extent = _header.Envelope.Intersection(extent);
             var feature = ToSbnFeature(0, extent);
 
-            return Root.QueryFeatureIds(feature.MinX, feature.MinY, 
-                                        feature.MaxX, feature.MaxY);
+            return Root.QueryFids(feature.MinX, feature.MinY,
+                                  feature.MaxX, feature.MaxY);
+        }
+
+        /// <summary>
+        /// Method to get the nodes of a specic level
+        /// </summary>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        public IList<SbnNode> GetNodesOfLevel(int level)
+        {
+            if (level < 1 || level > NumLevels)
+                throw new ArgumentOutOfRangeException("level");
+
+            var start = (int)Math.Pow(2, level - 1);
+            var end = 2 * start - 1;
+            return Nodes.GetRange(start, end, 1);
+        }
+
+        public static SbnTree Create(ICollection<Tuple<uint, IGeometry>> boxedFeatures)
+        {
+            Interval x, y, z, m;
+            GetIntervals(boxedFeatures, out x, out y, out z, out m);
+            var tree = new SbnTree(new SbnHeader(boxedFeatures.Count, x, y, z, m));
+            foreach (var boxedFeature in boxedFeatures)
+            {
+                tree.Insert(tree.ToSbnFeature(boxedFeature.Item1, boxedFeature.Item2));
+            }
+            
+            tree.CompactSeamFeatures();
+            return tree;
+        }
+
+        private static void GetIntervals(IEnumerable<Tuple<uint, IGeometry>> geoms, out Interval xrange, out Interval yrange,
+            out Interval zrange, out Interval mrange)
+        {
+            xrange = Interval.Create();
+            yrange = Interval.Create();
+            zrange = Interval.Create();
+            mrange = Interval.Create();
+
+            foreach (var tuple in geoms)
+            {
+                Interval x2range, y2range, z2range, m2range;
+                tuple.Item2.GetMetric(out x2range, out y2range, out z2range, out m2range);
+                xrange = xrange.ExpandedByInterval(x2range);
+                yrange = yrange.ExpandedByInterval(y2range);
+                zrange = zrange.ExpandedByInterval(z2range);
+                mrange = mrange.ExpandedByInterval(m2range);
+            }
+        }
+
+
+        private void CompactSeamFeatures()
+        {
+            // the mystery algorithm - compaction? optimization? obfuscation?
+            if (NumLevels < 4)
+                return;
+
+            var start = FirstLeafNodeId/2 - 1;
+            var end = start/8;
+            if (start < 3) start = 3;
+            if (end < 1) end = 1;
+
+            foreach (var node in Nodes.GetRange(start, end, -1))
+            {
+                var id = node.Nid;
+                var children = Nodes.GetRange(id*2, 2);
+                foreach (var child in children)
+                {
+                    // There are no items to pull up
+                    if (child.FeatureCount == 0) continue;
+
+                    var cid = child.Nid;
+                    var grandchildren = Nodes.GetRange(cid*2, 2);
+                    var gccount = 0;
+                    foreach (var gcnode in grandchildren)
+                        gccount += gcnode.FeatureCount;
+
+                    Debug.WriteLine("Node {0} has {1} GC", id, gccount);
+                    if (gccount == 0)
+                    {
+                        //Debug.WriteLine("Slurping {0} features from node {1}", child.AllFeatures().Count, child.id);
+                        //node.features.AddRange(child.features);
+
+                        // this is weird but it works
+                        if (child.FeatureCount < 4)
+                        {
+                            for (var i = 0; i < 4; i++)
+                                node.LastBin.AddFeature(child.FirstBin[i]);
+                            child.FirstBin = null;
+                        }
+                    }
+                }
+            }
+
         }
     }
 }

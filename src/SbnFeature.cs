@@ -7,7 +7,7 @@ using GeoAPI.Geometries;
 namespace SbnSharp
 {
     /// <summary>
-    /// An 
+    /// An entry in the Sbn index 
     /// </summary>
     [StructLayout(LayoutKind.Explicit)]
     public struct SbnFeature : IEquatable<SbnFeature>
@@ -70,18 +70,26 @@ namespace SbnSharp
             MaxY = ScaleUpper(extent.MaxY, yrange);
         }
 
-        /// <summary>
-        /// Method to get an approximate extent of the this feature
-        /// </summary>
-        //TODO IS THIS NECESSARY?
-        public Envelope GetExtent(SbnHeader header)
+        public SbnFeature(byte[] featureBytes)
         {
-            return new Envelope(
-                header.XRange.Min + MinX*header.XRange.Width/255d,
-                header.XRange.Max + MaxX*header.XRange.Width/255d,
-                header.YRange.Min + MinY*header.YRange.Width/255d,
-                header.YRange.Max + MaxY*header.YRange.Width/255d);
+            MinX = featureBytes[0];
+            MinY = featureBytes[1];
+            MaxX = featureBytes[2];
+            MaxY = featureBytes[3];
+            _fid = BitConverter.ToUInt32(featureBytes, 4);
         }
+
+        ///// <summary>
+        ///// Method to get an approximate extent of the this feature
+        ///// </summary>
+        //public Envelope GetExtent(SbnHeader header)
+        //{
+        //    return new Envelope(
+        //        header.XRange.Min + MinX*header.XRange.Width/255d,
+        //        header.XRange.Max + MaxX*header.XRange.Width/255d,
+        //        header.YRange.Min + MinY*header.YRange.Width/255d,
+        //        header.YRange.Max + MaxY*header.YRange.Width/255d);
+        //}
 
         /// <summary>
         /// Intersection predicate
@@ -154,7 +162,18 @@ namespace SbnSharp
 
         public override string ToString()
         {
-            return string.Format("[SbnFeature {0}({1},{2},{3},{4})]", _fid, MinX, MaxX, MinY, MaxY);
+            return string.Format("[SbnFeature {0}: ({1},{2},{3},{4})]", _fid, MinX, MaxX, MinY, MaxY);
+        }
+
+        public Array AsBytes()
+        {
+            var res = new byte[8];
+            res[0] = MinX;
+            res[1] = MinY;
+            res[2] = MaxX;
+            res[3] = MaxY;
+            Buffer.BlockCopy(BitConverter.GetBytes(Fid), 0, res, 4, 4);
+            return res;
         }
     }
 }
