@@ -1,7 +1,7 @@
 using GeoAPI.DataStructures;
 using GeoAPI.Geometries;
 
-namespace SbnSharp
+namespace SharpSbn
 {
     internal static class GeometryMetricExtensions
     {

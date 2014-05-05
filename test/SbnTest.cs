@@ -10,6 +10,7 @@ using GeoAPI.Geometries;
 using NUnit.Framework;
 using SharpMap.Data;
 using SharpMap.Data.Providers;
+using SharpSbn;
 
 namespace SbnSharp.Test
 {

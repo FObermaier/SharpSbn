@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace SbnSharp
+namespace SharpSbn
 {
     internal static class NumPySlicing
     {

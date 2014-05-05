@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using GeoAPI.DataStructures;
 
-namespace SbnSharp
+namespace SharpSbn
 {
     internal static class BinaryIOExtensions
     {

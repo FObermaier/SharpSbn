@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace SbnSharp
+namespace SharpSbn
 {
     /// <summary>
     /// Exception for all <see cref="Sbn"/> related exceptions

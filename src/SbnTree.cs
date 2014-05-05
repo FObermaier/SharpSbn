@@ -1,15 +1,12 @@
-﻿using System.Collections;
-using System.ComponentModel.Design.Serialization;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using GeoAPI.DataStructures;
 using GeoAPI.Geometries;
-using System;
-using System.Collections.Generic;
-using System.IO;
 
-namespace SbnSharp
+namespace SharpSbn
 {
     public class SbnTree
     {
@@ -159,6 +156,10 @@ namespace SbnSharp
         /// </summary>
         internal int FirstLeafNodeId { get; private set; }
 
+        /// <summary>
+        /// Method to create the nodes for this tree
+        /// </summary>
+        /// <param name="numNodes">The number of nodes</param>
         private void CreateNodes(int numNodes)
         {
             Nodes = new SbnNode[numNodes];
@@ -166,6 +167,11 @@ namespace SbnSharp
             Nodes[1].AddChildren();
         }
 
+        /// <summary>
+        /// Function to compute the number of levels required for the number of features to add
+        /// </summary>
+        /// <param name="featureCount">The number of features a tree should take</param>
+        /// <returns>The number of levels</returns>
         private static int GetNumberOfLevels(int featureCount)
         {
             var levels = (int)Math.Log(((featureCount - 1) / 8.0 + 1), 2) + 1;
@@ -175,8 +181,15 @@ namespace SbnSharp
             return levels;
         }
 
+        /// <summary>
+        /// The root node
+        /// </summary>
         internal SbnNode Root { get { return Nodes[1]; } }
 
+        /// <summary>
+        /// Method to save the tree to a file
+        /// </summary>
+        /// <param name="sbnName">The filename</param>
         public void Save(string sbnName)
         {
             if (string.IsNullOrEmpty(sbnName))
@@ -194,6 +207,11 @@ namespace SbnSharp
                 Write(sbnWriter, sbxWriter);
         }
 
+        /// <summary>
+        /// Method to get header values for the shapefile header record
+        /// </summary>
+        /// <param name="numBins">The number of bins</param>
+        /// <param name="lastBinIndex">The index of the last bin that contains features</param>
         private void GetHeaderValues(out int numBins, out int lastBinIndex)
         {
             numBins = 0;
@@ -209,6 +227,11 @@ namespace SbnSharp
             }
         }
 
+        /// <summary>
+        /// Method to write the tree
+        /// </summary>
+        /// <param name="sbnsw">A writer for the sbn stream</param>
+        /// <param name="sbxsw">A writer for the sbx stream</param>
         private void Write(BinaryWriter sbnsw, BinaryWriter sbxsw)
         {
             // Gather header data
@@ -288,18 +311,17 @@ namespace SbnSharp
             }*/
         }
 
-#if DEBUG
         public bool VerifyNodes()
         {
-
+#if DEBUG
             foreach (var node in Nodes.Skip(1))
             {
                 if (!node.VerifyBins())
                     return false;
             }
+#endif
             return true;
         }
-#endif
 
 
         //private class SbnBinEnumerator : IEnumerator<SbnBin>
@@ -390,6 +412,11 @@ namespace SbnSharp
         //    }
         //}
 
+        /// <summary>
+        /// Method to compute the number of features in a given level
+        /// </summary>
+        /// <param name="level">The level</param>
+        /// <returns>The number of features</returns>
         public int FeaturesInLevel(int level)
         {
             // return the number of features in a level
@@ -429,16 +456,33 @@ namespace SbnSharp
 #endif
         }
 
+        /// <summary>
+        /// Method to create an <see cref="SbnFeature"/> from an id and a geometry
+        /// </summary>
+        /// <param name="fid">The feature's id</param>
+        /// <param name="geometry">The geometry</param>
+        /// <returns>A sbnfeature</returns>
         private SbnFeature ToSbnFeature(uint fid, IGeometry geometry)
         {
             return new SbnFeature(_header.Envelope, fid, geometry.EnvelopeInternal);
         }
 
+        /// <summary>
+        /// Method to create an <see cref="SbnFeature"/> from an id and an envelope
+        /// </summary>
+        /// <param name="fid">The feature's id</param>
+        /// <param name="envelope">The geometry</param>
+        /// <returns>A sbnfeature</returns>
         private SbnFeature ToSbnFeature(uint fid, Envelope envelope)
         {
             return new SbnFeature(_header.Envelope, fid, envelope);
         }
 
+        /// <summary>
+        /// Method to query the ids of features that intersect with <paramref name="extent"/>
+        /// </summary>
+        /// <param name="extent">The extent</param>
+        /// <returns>An enumeration of feature ids</returns>
         public IEnumerable<uint> QueryFids(Envelope extent)
         {
             extent = _header.Envelope.Intersection(extent);
@@ -463,6 +507,11 @@ namespace SbnSharp
             return Nodes.GetRange(start, end, 1);
         }
 
+        /// <summary>
+        /// Method to create an <see cref="SbnTree"/> from a collection of (id, geometry) tuples
+        /// </summary>
+        /// <param name="boxedFeatures">The (id, geometry) tuples</param>
+        /// <returns></returns>
         public static SbnTree Create(ICollection<Tuple<uint, IGeometry>> boxedFeatures)
         {
             Interval x, y, z, m;
@@ -477,6 +526,14 @@ namespace SbnSharp
             return tree;
         }
 
+        /// <summary>
+        /// Method to get some of the shapefile header values.
+        /// </summary>
+        /// <param name="geoms">An enumeration of (id, geometry) tuples</param>
+        /// <param name="xrange">The x-extent</param>
+        /// <param name="yrange">The y-extent</param>
+        /// <param name="zrange">The z-extent</param>
+        /// <param name="mrange">The m-extent</param>
         private static void GetIntervals(IEnumerable<Tuple<uint, IGeometry>> geoms, out Interval xrange, out Interval yrange,
             out Interval zrange, out Interval mrange)
         {
@@ -496,7 +553,9 @@ namespace SbnSharp
             }
         }
 
-
+        /// <summary>
+        /// Method to compact this <see cref="SbnTree"/>.
+        /// </summary>
         private void CompactSeamFeatures()
         {
             // the mystery algorithm - compaction? optimization? obfuscation?
@@ -523,7 +582,7 @@ namespace SbnSharp
                     foreach (var gcnode in grandchildren)
                         gccount += gcnode.FeatureCount;
 
-                    Debug.WriteLine("Node {0} has {1} GC", id, gccount);
+                    //Debug.WriteLine("Node {0} has {1} GC", id, gccount);
                     if (gccount == 0)
                     {
                         //Debug.WriteLine("Slurping {0} features from node {1}", child.AllFeatures().Count, child.id);

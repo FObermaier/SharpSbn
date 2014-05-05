@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace SbnSharp
+namespace SharpSbn
 {
     public class SbnNode : IEnumerable<SbnFeature>
     {
@@ -21,6 +21,15 @@ namespace SbnSharp
             Full = nid == 1 || nid >= _tree.FirstLeafNodeId;
         }
 
+        /// <summary>
+        /// Creates an instance of this class
+        /// </summary>
+        /// <param name="tree">The tree this node belongs to</param>
+        /// <param name="nid">The node's id</param>
+        /// <param name="minx">The lower x-ordinate</param>
+        /// <param name="miny">The lower y-ordinate</param>
+        /// <param name="maxx">The upper x-ordinate</param>
+        /// <param name="maxy">The upper y-ordinate</param>
         public SbnNode(SbnTree tree, int nid, byte minx, byte miny, byte maxx, byte maxy)
             :this(tree, nid)
         {
@@ -30,6 +39,10 @@ namespace SbnSharp
             ymax = maxy;
         }
 
+        /// <summary>
+        /// Method to add a bin to this node
+        /// </summary>
+        /// <param name="addBin"></param>
         internal void AddBin(SbnBin addBin)
         {
             if (FirstBin == null)
@@ -127,10 +140,19 @@ namespace SbnSharp
             }
         }
 
+        /// <summary>
+        /// Property to indicate that the node is full, it has had more than 8 features once and was then split
+        /// </summary>
         internal bool Full { get; private set; }
 
+        /// <summary>
+        /// Gets the node's level
+        /// </summary>
         internal int Level { get { return (int) Math.Log(Nid, 2) + 1; }}
 
+        /// <summary>
+        /// Gets the number of features in this node
+        /// </summary>
         public int FeatureCount
         {
             get
@@ -149,6 +171,9 @@ namespace SbnSharp
             }
         }
 
+        /// <summary>
+        /// Add the child nodes
+        /// </summary>
         public void AddChildren()
         {
             if (Nid >= _tree.FirstLeafNodeId) return;
@@ -156,23 +181,18 @@ namespace SbnSharp
             var splitBounds = GetSplitBounds(1);
             var childId = Nid*2;
             _tree.Nodes[childId] = new SbnNode(_tree, childId++, splitBounds[0], splitBounds[1], splitBounds[2], splitBounds[3]);
-            //Child1.SetBounds(GetSplitBounds(1));
             Child1.AddChildren();
 
             splitBounds = GetSplitBounds(2);
             _tree.Nodes[childId] = new SbnNode(_tree, childId, splitBounds[0], splitBounds[1], splitBounds[2], splitBounds[3]);
-            //Child2.SetBounds(GetSplitBounds(2));
             Child2.AddChildren();
         }
 
-        private void SetBounds(byte[] getSplitBounds)
-        {
-            xmin = getSplitBounds[0];
-            ymin = getSplitBounds[1];
-            xmax = getSplitBounds[2];
-            ymax = getSplitBounds[3];
-        }
-
+        /// <summary>
+        /// Compute the split ordinate for a given <paramref name="splitAxis"/>
+        /// </summary>
+        /// <param name="splitAxis">The axis</param>
+        /// <returns>The ordinate</returns>
         private byte GetSplitOridnate(int splitAxis)
         {
             var mid = (splitAxis == 1)
@@ -182,6 +202,11 @@ namespace SbnSharp
             return (byte) (mid - mid%2);
         }
 
+        /// <summary>
+        /// Get the bounds for one of the child nodes
+        /// </summary>
+        /// <param name="childIndex">The index of the child node</param>
+        /// <returns>The split bounds</returns>
         private byte[] GetSplitBounds(int childIndex)
         {
             var splitAxis = Level % 2;// == 1 ? 'x' : 'y';
@@ -232,6 +257,16 @@ namespace SbnSharp
             return res;
         }
 
+        /// <summary>
+        /// Method to query all the ids of features in this node that intersect the box defined
+        /// by <paramref name="minx"/>, <paramref name="miny"/>, <paramref name="maxx"/>
+        /// and <paramref name="maxy"/> 
+        /// </summary>
+        /// <param name="minx">The lower x-ordinate</param>
+        /// <param name="miny">The lower y-ordinate</param>
+        /// <param name="maxx">The upper x-ordinate</param>
+        /// <param name="maxy">The upper y-ordinate</param>
+        /// <returns>An enumeration of feature ids</returns>
         public IEnumerable<uint> QueryFids(byte minx, byte miny, byte maxx, byte maxy)
         {
             if (ContainedBy(minx, miny, maxx, maxy))
@@ -252,6 +287,10 @@ namespace SbnSharp
             return fids;
         }
 
+        /// <summary>
+        /// Helper method to get all the ids of features in this node
+        /// </summary>
+        /// <returns>An enumeration of feature ids</returns>
         private IEnumerable<uint> GetAllFidsInNode()
         {
             var res = new List<uint>();
@@ -264,17 +303,10 @@ namespace SbnSharp
             return res;
         }
 
-        public bool HasChildren
-        {
-            get
-            {
-                if (Nid >= _tree.FirstLeafNodeId)
-                    return false;
-
-                return CountAllFeatures() > 0;
-            }
-        }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return string.Format("[Node {0}: ({1}-{2},{3}-{4})/{5}]", Nid, xmin, xmax, ymin, ymax, GetSplitOridnate(Level%2));
@@ -330,6 +362,9 @@ namespace SbnSharp
             return GetEnumerator();
         }
 
+        /// <summary>
+        /// Private helper class to enumerate feature ids
+        /// </summary>
         private class SbnFeatureEnumerator : IEnumerator<SbnFeature>
         {
             private SbnBin _firstBin;
@@ -392,20 +427,23 @@ namespace SbnSharp
                 get { return Current; }
             }
         }
-#if DEBUG
+
         public bool VerifyBins()
         {
-            
+#if DEBUG
             foreach (var feature in this)
             {
                 if (!Contains(feature.MinX, feature.MinY, feature.MaxX, feature.MaxY))
                     return false;
             }
-
+#endif
             return true;
         }
-#endif
 
+        /// <summary>
+        /// Method to insert a feature at this node
+        /// </summary>
+        /// <param name="feature">The feature to add</param>
         public void Insert(SbnFeature feature)
         {
             // if this is leaf, just take the feature
@@ -474,33 +512,10 @@ namespace SbnSharp
                 Child1.Insert(feature);
         }
 
-        private void PassFeature(SbnFeature feature, byte fmin, byte fmax, byte splitOrdinate)
-        {
-            // pass the feature to a child node
-            int min, max;
-            var splitAxis = Level%2;
-            if (splitAxis == 1)
-            {
-                min = feature.MinX;
-                max = feature.MaxX;
-            }
-            else
-            {
-                min = feature.MinY;
-                max = feature.MaxY;
-            }
-            if (fmin < GetSplitOridnate(splitAxis))
-            {
-                //leftbottom.Insert(feature);
-                Child2.Insert(feature);
-            }
-            else
-            {
-                //righttop.Insert(feature);
-                Child1.Insert(feature);
-            }
-        }
-
+        /// <summary>
+        /// Method to actually add a feature to this node
+        /// </summary>
+        /// <param name="feature"></param>
         private void AddFeature(SbnFeature feature)
         {
             if (FeatureCount % 100 == 0)

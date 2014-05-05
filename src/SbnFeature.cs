@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using GeoAPI.DataStructures;
 using GeoAPI.Geometries;
 
-namespace SbnSharp
+namespace SharpSbn
 {
     /// <summary>
     /// An entry in the Sbn index 
