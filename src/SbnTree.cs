@@ -69,7 +69,7 @@ namespace SharpSbn
             var ms = new MemoryStream(reader.ReadBytes(maxNodeId * 8));
             using (var msReader = new BinaryReader(ms))
             {
-                var indexNid = 1;
+                var indexNodeId = 1;
                 while (msReader.BaseStream.Position < msReader.BaseStream.Length)
                 {
                     var nid = msReader.ReadInt32BE();
@@ -77,16 +77,16 @@ namespace SharpSbn
 
                     if (nid > 1)
                     {
-                        var node = Nodes[indexNid];
+                        var node = Nodes[indexNodeId];
                         while (node.FeatureCount < featureCount)
                         {
                             var bin = new SbnBin();
                             bin.Read(reader);
-                            node.AddBin(bin);
+                            node.AddBin(bin, true);
                         }
                         Debug.Assert(node.VerifyBins());
                     }
-                    indexNid++;
+                    indexNodeId++;
                 }
             }
 
@@ -125,9 +125,97 @@ namespace SharpSbn
         /// <param name="numFeatures">The number of features in the tree</param>
         private void BuildTree(int numFeatures)
         {
+            Built = false;
             NumLevels = GetNumberOfLevels(numFeatures);
             FirstLeafNodeId = (int)Math.Pow(2, NumLevels - 1);
             CreateNodes((int)Math.Pow(2, NumLevels));
+        }
+
+        /// <summary>
+        /// Event raised when a rebuild of the tree is required, 
+        /// that requires access to all feature information.
+        /// </summary>
+        public event EventHandler<SbnTreeRebuildRequiredEventArgs> RebuildRequried;
+
+        /// <summary>
+        /// Event invoker for the <see cref="RebuildRequried"/> event
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnRebuildRequired(SbnTreeRebuildRequiredEventArgs e)
+        {
+            var handler = RebuildRequried;
+            if (handler != null)
+                handler(this, e);
+        }
+
+
+        /// <summary>
+        /// Method to insert a new feature to the tree
+        /// </summary>
+        /// <param name="fid">The feature's id</param>
+        /// <param name="geometry">The feature's geometry</param>
+        public void Insert(uint fid, IGeometry geometry)
+        {
+            // Convert to an sbnfeature
+            var sbnFeature = ToSbnFeature(fid, geometry.EnvelopeInternal);
+
+            // Has the tree already been built?
+            if (Built)
+            {
+                // Does the feature fit into the current tree
+                if (!Root.Contains(sbnFeature.MinX, sbnFeature.MinY, sbnFeature.MaxX, sbnFeature.MaxY) )
+                {
+                    OnRebuildRequired(new SbnTreeRebuildRequiredEventArgs(fid, geometry));
+                    return;
+                }
+
+                // Compute number of features in tree
+                var featureCount = FeatureCount + 1;
+
+                // Does the new number of features require more levels?
+                if (GetNumberOfLevels(featureCount) != NumLevels)
+                {
+                    // This can be done inplace.
+                    RebuildTree(featureCount, sbnFeature);
+                }
+            }
+            
+            //Insert the feature
+            Insert(sbnFeature);
+        }
+
+        /// <summary>
+        /// Method to -inplace- rebuild the tree
+        /// </summary>
+        /// <param name="featureCount">The number of features for the tree</param>
+        /// <param name="newFeature">The new feature to add</param>
+        private void RebuildTree(int featureCount, SbnFeature newFeature)
+        {
+            var nodes = Nodes;
+            _featureIds.Clear();
+
+            BuildTree(featureCount);
+
+            for (var i = 0; i < nodes.Length; i++)
+            {
+                foreach (var feature in nodes[i])
+                    Insert(feature);
+            }
+            Insert(newFeature);
+
+            CompactSeamFeatures();
+        }
+
+        /// <summary>
+        /// Method to remove the feature <paramref name="fid"/>
+        /// </summary>
+        /// <param name="fid">The id of the feature</param>
+        /// <param name="envelope">The envelope in which to search for the feature</param>
+        public void Remove(uint fid, Envelope envelope = null)
+        {
+            envelope = envelope ?? _header.Envelope;
+            var searchFeature = new SbnFeature(_header, fid, envelope);
+            Root.Remove(searchFeature);
         }
 
         /// <summary>
@@ -140,6 +228,11 @@ namespace SharpSbn
             Root.Insert(feature);
             _featureIds.Add(feature.Fid);
         }
+
+        /// <summary>
+        /// Gets a value indicating that that the tree has been built.
+        /// </summary>
+        internal bool Built { get; set; }
 
         /// <summary>
         /// Gets the number of levels in this tree
@@ -563,8 +656,9 @@ namespace SharpSbn
                 return;
 
             var start = FirstLeafNodeId/2 - 1;
-            var end = start/8;
             if (start < 3) start = 3;
+
+            var end = start / 8;
             if (end < 1) end = 1;
 
             foreach (var node in Nodes.GetRange(start, end, -1))
@@ -598,7 +692,7 @@ namespace SharpSbn
                     }
                 }
             }
-
+            Built = true;
         }
     }
 }

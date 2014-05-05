@@ -150,9 +150,13 @@ namespace SharpSbn
         public void RemoveFeature(SbnFeature feature)
         {
             var index = FindFeature(feature);
-            if (index < 0) return;
-            
-            var offset = index*8;
+            if (index >= 0) 
+                RemoveAt(index);
+        }
+
+        public void RemoveAt(int index)
+        {
+            var offset = index * 8;
             var size = 800 - 8 - offset;
             if (size > 0)
             {

@@ -24,18 +24,18 @@ namespace SharpSbn
         [FieldOffset(3)]
         internal readonly byte MaxY;
 
-        /// <summary>
-        /// Creates an instance of this class using a binary reader
-        /// </summary>
-        /// <param name="sr">The binary reader</param>
-        internal SbnFeature(BinaryReader sr)
-        {
-            MinX = sr.ReadByte();
-            MinY = sr.ReadByte();
-            MaxX = sr.ReadByte();
-            MaxY = sr.ReadByte();
-            _fid = sr.ReadUInt32BE();
-        }
+        ///// <summary>
+        ///// Creates an instance of this class using a binary reader
+        ///// </summary>
+        ///// <param name="sr">The binary reader</param>
+        //internal SbnFeature(BinaryReader sr)
+        //{
+        //    MinX = sr.ReadByte();
+        //    MinY = sr.ReadByte();
+        //    MaxX = sr.ReadByte();
+        //    MaxY = sr.ReadByte();
+        //    _fid = sr.ReadUInt32BE();
+        //}
 
         /// <summary>
         /// Creates an instance of this class using the provided <paramref name="fid"/> and <paramref name="extent"/>
@@ -109,18 +109,18 @@ namespace SharpSbn
         /// </summary>
         public uint Fid { get { return _fid; }}
 
-        /// <summary>
-        /// Method to write the feature to an index
-        /// </summary>
-        /// <param name="writer"></param>
-        internal void Write(BinaryWriter writer)
-        {
-            writer.Write(MinX);
-            writer.Write(MinY);
-            writer.Write(MaxX);
-            writer.Write(MaxY);
-            writer.WriteBE(_fid);
-        }
+        ///// <summary>
+        ///// Method to write the feature to an index
+        ///// </summary>
+        ///// <param name="writer"></param>
+        //internal void Write(BinaryWriter writer)
+        //{
+        //    writer.Write(MinX);
+        //    writer.Write(MinY);
+        //    writer.Write(MaxX);
+        //    writer.Write(MaxY);
+        //    writer.WriteBE(_fid);
+        //}
 
         #region private utility functions
         private static byte ScaleLower(double value, Interval range)

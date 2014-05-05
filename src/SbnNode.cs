@@ -7,7 +7,8 @@ namespace SharpSbn
     public class SbnNode : IEnumerable<SbnFeature>
     {
         private readonly SbnTree _tree;
-        private byte xmin, xmax, ymin, ymax;
+        private readonly byte _minX, _minY, _maxX, _maxY;
+        private bool _full;
 
         /// <summary>
         /// Creates an instance of this class
@@ -33,20 +34,29 @@ namespace SharpSbn
         public SbnNode(SbnTree tree, int nid, byte minx, byte miny, byte maxx, byte maxy)
             :this(tree, nid)
         {
-            xmin = minx;
-            ymin = miny;
-            xmax = maxx;
-            ymax = maxy;
+            _minX = minx;
+            _minY = miny;
+            _maxX = maxx;
+            _maxY = maxy;
         }
 
         /// <summary>
         /// Method to add a bin to this node
         /// </summary>
-        /// <param name="addBin"></param>
-        internal void AddBin(SbnBin addBin)
+        /// <param name="addBin">The bin to add</param>
+        /// <param name="setFull">A value indicating that all parent nodes should be set to <see cref="Full"/></param>
+        internal void AddBin(SbnBin addBin, bool setFull = false)
         {
             if (FirstBin == null)
+            {
                 FirstBin = addBin;
+                if (setFull)
+                {
+                    if (Parent != null) 
+                        Parent.Full = true;
+                }
+            }
+
             else
             {
                 var bin = FirstBin;
@@ -143,7 +153,17 @@ namespace SharpSbn
         /// <summary>
         /// Property to indicate that the node is full, it has had more than 8 features once and was then split
         /// </summary>
-        internal bool Full { get; private set; }
+        internal bool Full
+        {
+            get { return _full; }
+            private set
+            {
+                if (Nid > 1 && !Parent.Full)
+                    Parent.Full = true;
+
+                _full = value;
+            }
+        }
 
         /// <summary>
         /// Gets the node's level
@@ -196,8 +216,8 @@ namespace SharpSbn
         private byte GetSplitOridnate(int splitAxis)
         {
             var mid = (splitAxis == 1)
-                ? /*(int)*/ (byte)((xmin + xmax) / 2.0 + 1)
-                : /*(int)*/ (byte)((ymin + ymax) / 2.0 + 1);
+                ? /*(int)*/ (byte)((_minX + _maxX) / 2.0 + 1)
+                : /*(int)*/ (byte)((_minY + _maxY) / 2.0 + 1);
 
             return (byte) (mid - mid%2);
         }
@@ -213,7 +233,7 @@ namespace SharpSbn
 
             var mid = GetSplitOridnate(splitAxis);
 
-            var res = new[] {xmin, ymin, xmax, ymax};
+            var res = new[] {_minX, _minY, _maxX, _maxY};
             switch (splitAxis)
             {
                 case 1: // x-ordinate
@@ -309,7 +329,7 @@ namespace SharpSbn
         /// <returns></returns>
         public override string ToString()
         {
-            return string.Format("[Node {0}: ({1}-{2},{3}-{4})/{5}]", Nid, xmin, xmax, ymin, ymax, GetSplitOridnate(Level%2));
+            return string.Format("[Node {0}: ({1}-{2},{3}-{4})/{5}]", Nid, _minX, _maxX, _minY, _maxY, GetSplitOridnate(Level%2));
         }
 
         /// <summary>
@@ -322,7 +342,7 @@ namespace SharpSbn
         /// <returns><value>true</value> if this node's bounding box intersect with the bounding box defined by <paramref name="minX"/>, <paramref name="maxX"/>, <paramref name="minY"/> and <paramref name="maxY"/>, otherwise <value>false</value></returns>
         internal bool Intersects(byte minX, byte minY, byte maxX, byte maxY)
         {
-            return !(minX > xmax || maxX < xmin || minY > ymax || maxY < ymin);
+            return !(minX > _maxX || maxX < _minX || minY > _maxY || maxY < _minY);
         }
 
         /// <summary>
@@ -335,8 +355,8 @@ namespace SharpSbn
         /// <returns><value>true</value> if this node's bounding box contains the bounding box defined by <paramref name="minX"/>, <paramref name="maxX"/>, <paramref name="minY"/> and <paramref name="maxY"/>, otherwise <value>false</value></returns>
         internal bool Contains(byte minX, byte minY, byte maxX, byte maxY)
         {
-            return minX >= xmin && maxX <= xmax &&
-                   minY >= ymin && maxY <= ymax;
+            return minX >= _minX && maxX <= _maxX &&
+                   minY >= _minY && maxY <= _maxY;
         }
 
         /// <summary>
@@ -349,8 +369,8 @@ namespace SharpSbn
         /// <returns><value>true</value> if this node's bounding box contains the bounding box defined by <paramref name="minX"/>, <paramref name="maxX"/>, <paramref name="minY"/> and <paramref name="maxY"/>, otherwise <value>false</value></returns>
         internal bool ContainedBy(byte minX, byte minY, byte maxX, byte maxY)
         {
-            return xmin >= minX && xmax <= maxX &&
-                   xmin >= minY && xmax <= minY;
+            return _minX >= minX && _maxX <= maxX &&
+                   _minX >= minY && _maxX <= minY;
         }
         public IEnumerator<SbnFeature> GetEnumerator()
         {
@@ -531,9 +551,43 @@ namespace SharpSbn
 #if VERBOSE
         public string ToStringVerbose()
         {
-            return string.Format("{0,5} {1,4}-{2,4} {3,4}-{4,4} {5} {6,4} {7,1}", Nid, xmin, xmax, ymin, ymax, Full ? 1 : 0, Full ? FeatureCount : 0, Full ? 0 : FeatureCount);
+            return string.Format("{0,5} {1,4}-{2,4} {3,4}-{4,4} {5} {6,4} {7,1}", Nid, _minX, _maxX, _minY, _maxY, Full ? 1 : 0, Full ? FeatureCount : 0, Full ? 0 : FeatureCount);
         }
 #endif
 
+        /// <summary>
+        /// Method to remove a feature from a bin
+        /// </summary>
+        /// <param name="searchFeature"></param>
+        /// <returns></returns>
+        internal bool Remove(SbnFeature searchFeature)
+        {
+            if (!Intersects(searchFeature.MinX, searchFeature.MinY, searchFeature.MaxX, searchFeature.MaxY))
+                return false;
+
+            if (FeatureCount > 0)
+            {
+                var searchBin = FirstBin;
+                for (var i = 0; i < FeatureCount; i++)
+                {
+                    var j = i % 100;
+                    if (i > 100 && j == 0)
+                        searchBin = searchBin.Next;
+                    if (searchBin[j].Fid == searchFeature.Fid)
+                    {
+                        searchBin.RemoveAt(j);
+                        return true;
+                    }
+                }
+            }
+
+            if (Nid < _tree.FirstLeafNodeId)
+            {
+                return Child1.Remove(searchFeature) || 
+                       Child2.Remove(searchFeature);
+            }
+
+            return false;
+        }
     }
 }

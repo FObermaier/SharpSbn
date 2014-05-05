@@ -5,8 +5,9 @@ namespace SharpSbn
 {
     internal static class GeometryMetricExtensions
     {
-        public static void GetMetric(this IGeometry self, out Interval xrange, out Interval yrange, out Interval zrange,
-            out Interval mrange)
+        internal static void GetMetric(this IGeometry self, 
+                                       out Interval xrange, out Interval yrange, 
+                                       out Interval zrange, out Interval mrange)
         {
             switch (self.OgcGeometryType)
             {

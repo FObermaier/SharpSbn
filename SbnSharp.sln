@@ -19,18 +19,21 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{E28F8461-D075-4DA6-8FBB-4DDE75D1E396}.Debug|Any CPU.ActiveCfg = Release|Any CPU
-		{E28F8461-D075-4DA6-8FBB-4DDE75D1E396}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{E28F8461-D075-4DA6-8FBB-4DDE75D1E396}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E28F8461-D075-4DA6-8FBB-4DDE75D1E396}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E28F8461-D075-4DA6-8FBB-4DDE75D1E396}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E28F8461-D075-4DA6-8FBB-4DDE75D1E396}.Release|Any CPU.Build.0 = Release|Any CPU
-		{86B250BB-F515-45E8-93BD-15810BC4CF49}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{86B250BB-F515-45E8-93BD-15810BC4CF49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{86B250BB-F515-45E8-93BD-15810BC4CF49}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Debug|Any CPU.ActiveCfg = Release|Any CPU
-		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NDepend) = preSolution
+		Project = ".\SbnSharp.ndproj"
 	EndGlobalSection
 EndGlobal
