@@ -168,7 +168,7 @@ namespace SharpSbn
         /// <summary>
         /// Gets the node's level
         /// </summary>
-        internal int Level { get { return (int) Math.Log(Nid, 2) + 1; }}
+        public int Level { get { return (int) Math.Log(Nid, 2) + 1; }}
 
         /// <summary>
         /// Gets the number of features in this node

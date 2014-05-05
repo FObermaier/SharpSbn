@@ -135,9 +135,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\SbnSharp.csproj">
+    <ProjectReference Include="..\src\SharpSbn.csproj">
       <Project>{e28f8461-d075-4da6-8fbb-4dde75d1e396}</Project>
-      <Name>SbnSharp</Name>
+      <Name>SharpSbn</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

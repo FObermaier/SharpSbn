@@ -76,7 +76,7 @@ namespace SharpSbn
         /// Method to read a bin
         /// </summary>
         /// <param name="reader">The reader to use</param>
-        public int Read(BinaryReader reader)
+        internal int Read(BinaryReader reader)
         {
             var bid = reader.ReadInt32BE();
             NumFeatures = reader.ReadInt32BE()/4;
@@ -132,7 +132,7 @@ namespace SharpSbn
             return res;
         }
 
-        public IEnumerable<uint> GetAllFidsInBin()
+        internal IEnumerable<uint> GetAllFidsInBin()
         {
             var res = new uint[NumFeatures];
             for (var i = 0; i < NumFeatures; i++)
@@ -142,19 +142,19 @@ namespace SharpSbn
             return res;
         }
 
-        public void AddFeature(SbnFeature feature)
+        internal void AddFeature(SbnFeature feature)
         {
             this[NumFeatures++] = feature;
         }
 
-        public void RemoveFeature(SbnFeature feature)
+        internal void RemoveFeature(SbnFeature feature)
         {
             var index = FindFeature(feature);
             if (index >= 0) 
                 RemoveAt(index);
         }
 
-        public void RemoveAt(int index)
+        internal void RemoveAt(int index)
         {
             var offset = index * 8;
             var size = 800 - 8 - offset;

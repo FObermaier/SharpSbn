@@ -1,12 +1,12 @@
+using GeoAPI.DataStructures;
 using System;
 using System.IO;
-using GeoAPI.DataStructures;
 
 namespace SharpSbn
 {
     internal static class BinaryIOExtensions
     {
-// ReSharper disable InconsistentNaming
+        // ReSharper disable InconsistentNaming
         internal static Int32 ReadInt32BE(this BinaryReader self)
         {
             var buffer = self.ReadBytes(4);
@@ -35,12 +35,12 @@ namespace SharpSbn
             self.Write(buffer);
         }
 
-        internal static void WriteBE(this BinaryWriter self, UInt32 value)
-        {
-            var buffer = BitConverter.GetBytes(value);
-            Array.Reverse(buffer);
-            self.Write(buffer);
-        }
+        //internal static void WriteBE(this BinaryWriter self, UInt32 value)
+        //{
+        //    var buffer = BitConverter.GetBytes(value);
+        //    Array.Reverse(buffer);
+        //    self.Write(buffer);
+        //}
 
         internal static void WriteBE(this BinaryWriter self, Double value)
         {
@@ -48,11 +48,13 @@ namespace SharpSbn
             Array.Reverse(buffer);
             self.Write(buffer);
         }
+
         internal static void WriteBE(this BinaryWriter self, Interval value)
         {
             self.WriteBE(value.Min);
             self.WriteBE(value.Max);
         }
+
         // ReSharper restore InconsistentNaming
     }
 }

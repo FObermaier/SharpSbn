@@ -99,7 +99,7 @@ namespace SharpSbn
         /// <param name="minY">The lower y-ordinate</param>
         /// <param name="maxY">The upper y-ordinate</param>
         /// <returns><value>true</value> if this feature intersects the bounds</returns>
-        public bool Intersects(byte minX, byte maxX, byte minY, byte maxY)
+        internal bool Intersects(byte minX, byte maxX, byte minY, byte maxY)
         {
             return !(minX > MaxX || maxX < MinX || minY > MaxY || maxY < MinY);
         }
@@ -165,7 +165,7 @@ namespace SharpSbn
             return string.Format("[SbnFeature {0}: ({1},{2},{3},{4})]", _fid, MinX, MaxX, MinY, MaxY);
         }
 
-        public Array AsBytes()
+        internal Array AsBytes()
         {
             var res = new byte[8];
             res[0] = MinX;

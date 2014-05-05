@@ -242,7 +242,7 @@ namespace SharpSbn
         /// <summary>
         /// 
         /// </summary>
-        internal int FeatureCount { get { return Root.CountAllFeatures(); } }
+        public int FeatureCount { get { return Root.CountAllFeatures(); } }
 
         /// <summary>
         /// Gets a value indicating the id of the first leaf
