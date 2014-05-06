@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text;
 using GeoAPI.DataStructures;
 using GeoAPI.Geometries;
 
@@ -150,5 +151,19 @@ namespace SharpSbn
             NumRecords--;
         }
 
+        public override string ToString()
+        {
+            var res = new StringBuilder();
+            res.AppendLine("[SbnHeader");
+            res.AppendFormat("  FileCode: {0}\n", FileCode);
+            res.AppendFormat("  FileCode2: {0}\n", FileCodeIndex);
+            res.AppendFormat("  NumRecords: {0}\n", NumRecords);
+            res.AppendFormat("  FileLength: {0}\n", FileLength);
+            res.AppendFormat("  XRange: {0}\n", XRange);
+            res.AppendFormat("  YRange: {0}\n", YRange);
+            res.AppendFormat("  ZRange: {0}\n", ZRange);
+            res.AppendFormat("  MRange: {0}]", MRange);
+            return res.ToString();
+        }
     }
 }

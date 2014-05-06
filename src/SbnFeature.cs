@@ -162,7 +162,7 @@ namespace SharpSbn
 
         public override string ToString()
         {
-            return string.Format("[SbnFeature {0}: ({1},{2},{3},{4})]", _fid, MinX, MaxX, MinY, MaxY);
+            return string.Format("[SbnFeature {0}: ({1}-{2},{3}-{4})]", _fid, MinX, MaxX, MinY, MaxY);
         }
 
         internal Array AsBytes()

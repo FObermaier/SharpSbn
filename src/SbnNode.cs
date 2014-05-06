@@ -329,7 +329,8 @@ namespace SharpSbn
         /// <returns></returns>
         public override string ToString()
         {
-            return string.Format("[Node {0}: ({1}-{2},{3}-{4})/{5}]", Nid, _minX, _maxX, _minY, _maxY, GetSplitOridnate(Level%2));
+            return string.Format("[SbnNode {0}: ({1}-{2},{3}-{4})/{5}/{6}]", Nid, _minX, _maxX, _minY, _maxY, 
+                GetSplitOridnate(Level%2), FeatureCount);
         }
 
         /// <summary>

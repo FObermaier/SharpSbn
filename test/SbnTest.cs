@@ -104,6 +104,17 @@ namespace SbnSharp.Test
         [TestCase("data\\S2_jarnvag_besk_polyline.shp")]
         public void TestCreateSbn(string shpFile)
         {
+            if (!File.Exists(shpFile))
+                throw new IgnoreException("File '" + shpFile + "' not found!");
+
+            // restore original data
+            var sbx = Path.ChangeExtension(shpFile, "sbx");
+            var sbn = Path.ChangeExtension(shpFile, "sbn");
+            if (File.Exists(sbx + "_orig"))
+                File.Copy(sbx + "_orig", sbx, true);
+            if (File.Exists(sbn + "_orig"))
+                File.Copy(sbn + "_orig", sbn, true);
+
             using (var p = new ShapeFile(shpFile, false))
             {
                 p.Open();
@@ -116,10 +127,6 @@ namespace SbnSharp.Test
                 var fdt = fds.Tables[0];
                 var tree = SbnTree.Create(GetFeatures(fdt));
 
-                Console.WriteLine(tree.FeaturesInLevel(1));
-                Console.WriteLine(tree.FeaturesInLevel(2));
-                Console.WriteLine(tree.FeaturesInLevel(3));
-
                 Assert.AreEqual(fdt.Rows.Count, tree.FeatureCount);
 
                 Assert.AreEqual(fdt.Rows.Count, tree.QueryFids(extent).Count());
@@ -128,7 +135,45 @@ namespace SbnSharp.Test
 
                 Console.WriteLine();
                 tree.DescribeTree(Console.Out);
+
+                //Save the tree
+                File.Copy(sbx, sbx + "_orig", true);
+                File.Copy(sbn, sbn + "_orig", true);
+
+                tree.Save(sbn);
+
+                SbnTree tree2 = null;
+                Assert.DoesNotThrow(() => tree2 = SbnTree.Load(sbn));
+                Assert.IsNotNull(tree2);
+
+                Assert.AreEqual(tree.FeatureCount, tree2.FeatureCount);
+                Assert.AreEqual(tree.NumLevels, tree2.NumLevels);
+                for (var i = 1; i < tree.NumLevels; i++)
+                    Assert.AreEqual(tree.GetNodesOfLevel(i), tree2.GetNodesOfLevel(i));
+
+                Assert.AreEqual(tree.QueryFids(shrunk).Count(), tree2.QueryFids(shrunk).Count());
+
+                SbnTree.SbnToText(sbn, new StreamWriter(File.OpenWrite(Path.ChangeExtension(sbn, ".createdsbn.txt"))));
             }
+        }
+
+        [TestCase("data\\riksgrs.sbn")]
+        [TestCase("data\\road_r.sbn")]
+        [TestCase("data\\S2_jarnvag_besk_polyline.sbn")]
+        public void TestToText(string sbnFile)
+        {
+            if (!File.Exists(sbnFile))
+                throw new IgnoreException("File '" + sbnFile + "' not found!");
+
+            SbnTree sbn = null;
+            Assert.DoesNotThrow(() => sbn = SbnTree.Load(sbnFile));
+            Assert.DoesNotThrow(() => SbnTree.SbnToText(sbnFile, new StreamWriter(File.OpenWrite(Path.ChangeExtension(sbnFile, ".sbn.txt")))));
+            Assert.IsNotNull(sbn);
+            Assert.IsTrue(sbn.VerifyNodes());
+
+            var sbnTestFile = Path.ChangeExtension(sbnFile, null) + "_test.sbn";
+            Assert.DoesNotThrow(() => sbn.Save(sbnTestFile));
+            Assert.DoesNotThrow(() => SbnTree.SbnToText(sbnTestFile, new StreamWriter(File.OpenWrite(Path.ChangeExtension(sbnTestFile, ".sbn.txt")))));
         }
 
         private static ICollection<Tuple<uint, IGeometry>> GetFeatures(FeatureDataTable fdt)

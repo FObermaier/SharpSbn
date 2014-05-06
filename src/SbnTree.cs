@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Xml.Linq;
 using GeoAPI.DataStructures;
 using GeoAPI.Geometries;
 
@@ -10,6 +11,54 @@ namespace SharpSbn
 {
     public class SbnTree
     {
+        public static void SbnToText(string sbnTree, TextWriter writer)
+        {
+            using (var br = new BinaryReader(File.OpenRead(sbnTree)))
+            {
+                // header
+                var header = new SbnHeader();
+                header.Read(br);
+                writer.WriteLine(header.ToString());
+
+                // Bin header
+                writer.WriteLine("[BinHeader]");
+
+                if (br.ReadUInt32BE() != 1)
+                    throw new SbnException("Invalid format, expecting 1");
+
+                var maxNodeId = br.ReadInt32BE() / 4;
+                writer.WriteLine("#1, {0} => MaxNodeId = {1}", maxNodeId * 4, maxNodeId);
+
+                var ms = new MemoryStream(br.ReadBytes(maxNodeId * 8));
+
+                using (var msReader = new BinaryReader(ms))
+                {
+                    var index = 2;
+                    while (msReader.BaseStream.Position < msReader.BaseStream.Length)
+                    {
+                        writer.WriteLine("#{2}, Index {0}, NumFeatures={1}", msReader.ReadInt32BE(), msReader.ReadInt32BE(), index++);
+                    }
+                }
+
+                writer.WriteLine("[Bins]");
+                while (br.BaseStream.Position < br.BaseStream.Length)
+                {
+                    var bin = new SbnBin();
+                    var binId = bin.Read(br);
+                    writer.Write("[SbnBin {0}: {1}]\n", binId, bin.NumFeatures);
+                    for (var i = 0; i < bin.NumFeatures;i++)
+                        writer.WriteLine("  "+ bin[i]);
+                }
+
+            }
+            writer.Flush();
+        }
+        
+        /// <summary>
+        /// Method to load an SBN index from a file
+        /// </summary>
+        /// <param name="sbnFilename">The filename</param>
+        /// <returns>The SBN index</returns>
         public static SbnTree Load(string sbnFilename)
         {
             if (string.IsNullOrEmpty(sbnFilename))
@@ -24,6 +73,11 @@ namespace SharpSbn
             }
         }
 
+        /// <summary>
+        /// Method to load an SBN index from a stream
+        /// </summary>
+        /// <param name="stream">The stream</param>
+        /// <returns>The SBN index</returns>
         public static SbnTree Load(Stream stream)
         {
             if (stream == null)
@@ -37,9 +91,6 @@ namespace SharpSbn
 
         private readonly SbnHeader _header = new SbnHeader();
         internal SbnNode[] Nodes;
-
-        internal int LastLeafNodeId { get { return FirstLeafNodeId*2-1; }}
-
         private readonly HashSet<uint> _featureIds;
 
         /// <summary>
@@ -235,12 +286,12 @@ namespace SharpSbn
         internal bool Built { get; set; }
 
         /// <summary>
-        /// Gets the number of levels in this tree
+        /// Gets a value indicating the number of levels in this tree
         /// </summary>
-        internal int NumLevels { get; private set; }
+        public int NumLevels { get; private set; }
 
         /// <summary>
-        /// 
+        /// Get a value indicating the number of features in the index
         /// </summary>
         public int FeatureCount { get { return Root.CountAllFeatures(); } }
 
@@ -248,6 +299,11 @@ namespace SharpSbn
         /// Gets a value indicating the id of the first leaf
         /// </summary>
         internal int FirstLeafNodeId { get; private set; }
+
+        /// <summary>
+        /// Gets the id of the last leaf node
+        /// </summary>
+        internal int LastLeafNodeId { get { return FirstLeafNodeId * 2 - 1; } }
 
         /// <summary>
         /// Method to create the nodes for this tree
@@ -330,6 +386,8 @@ namespace SharpSbn
             // Gather header data
             int numBins, lastBinIndex;
             GetHeaderValues(out numBins, out lastBinIndex);
+
+            // we have one additional bin
             numBins++;
 
             // first bin descriptors
@@ -367,12 +425,14 @@ namespace SharpSbn
         /// <param name="lastBinIndex"></param>
         private void WriteBinHeader(BinaryWriter sbnsw, int lastBinIndex)
         {
+            var binIndex = 2;
             for (var i = 1; i <= lastBinIndex; i++)
             {
                 if (Nodes[i].FeatureCount > 0)
                 {
-                    sbnsw.WriteBE(Nodes[i].Nid+1);
+                    sbnsw.WriteBE(binIndex);
                     sbnsw.WriteBE(Nodes[i].FeatureCount);
+                    binIndex += (int) Math.Ceiling(Nodes[i].FeatureCount/100d);
                 }
                 else
                 {
