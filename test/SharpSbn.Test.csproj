@@ -135,7 +135,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\SharpSbn.csproj">
+    <ProjectReference Include="..\SharpSbn\SharpSbn.csproj">
       <Project>{e28f8461-d075-4da6-8fbb-4dde75d1e396}</Project>
       <Name>SharpSbn</Name>
     </ProjectReference>

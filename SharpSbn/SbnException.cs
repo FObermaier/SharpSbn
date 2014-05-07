@@ -6,7 +6,9 @@ namespace SharpSbn
     /// <summary>
     /// Exception for all <see cref="Sbn"/> related exceptions
     /// </summary>
+#if !PCL
     [Serializable]
+#endif
     public class SbnException : Exception
     {
         /// <summary>
@@ -27,7 +29,7 @@ namespace SharpSbn
             : base(message, innerException)
         {
         }
-
+#if !PCL
         /// <summary>
         /// Creates an instance of this class
         /// </summary>
@@ -37,5 +39,6 @@ namespace SharpSbn
             : base(info, context)
         {
         }
+#endif
     }
 }

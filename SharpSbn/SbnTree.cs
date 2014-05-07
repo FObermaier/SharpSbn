@@ -11,6 +11,7 @@ namespace SharpSbn
 {
     public class SbnTree
     {
+#if !PCL
         public static void SbnToText(string sbnTree, TextWriter writer)
         {
             using (var br = new BinaryReader(File.OpenRead(sbnTree)))
@@ -53,6 +54,9 @@ namespace SharpSbn
             }
             writer.Flush();
         }
+#endif
+
+#if !PCL
         
         /// <summary>
         /// Method to load an SBN index from a file
@@ -72,6 +76,7 @@ namespace SharpSbn
                 return Load(stream);
             }
         }
+#endif
 
         /// <summary>
         /// Method to load an SBN index from a stream
@@ -335,6 +340,7 @@ namespace SharpSbn
         /// </summary>
         internal SbnNode Root { get { return Nodes[1]; } }
 
+#if !PCL
         /// <summary>
         /// Method to save the tree to a file
         /// </summary>
@@ -355,6 +361,7 @@ namespace SharpSbn
             using (var sbxWriter = new BinaryWriter(sbxStream))
                 Write(sbnWriter, sbxWriter);
         }
+#endif
 
         /// <summary>
         /// Method to get header values for the shapefile header record

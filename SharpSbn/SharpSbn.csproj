@@ -47,7 +47,6 @@
     <Compile Include="NumPySlicing.cs" />
     <Compile Include="BinaryIOExtensions.cs" />
     <Compile Include="SbnBin.cs" />
-    <Compile Include="SbnBinHeader.cs" />
     <Compile Include="SbnFeature.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SbnException.cs" />
