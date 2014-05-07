@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{1A3D1636-8576-463D-BA97-673E739A0B3C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>SharpSbn.PCL</RootNamespace>
+    <AssemblyName>SharpSbn.PCL</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile136</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;PCL</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;PCL</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- A reference to the entire .NET Framework is automatically included -->
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\SharpSbn\BinaryIOExtensions.cs">
+      <Link>BinaryIOExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\GeometryMetricExtensions.cs">
+      <Link>GeometryMetricExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\NumPySlicing.cs">
+      <Link>NumPySlicing.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\SbnBin.cs">
+      <Link>SbnBin.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\SbnException.cs">
+      <Link>SbnException.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\SbnFeature.cs">
+      <Link>SbnFeature.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\SbnHeader.cs">
+      <Link>SbnHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\SbnNode.cs">
+      <Link>SbnNode.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\SbnTree.cs">
+      <Link>SbnTree.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\SbnTreeRebuildRequiredEventArgs.cs">
+      <Link>SbnTreeRebuildRequiredEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\Properties\AssemblyInfo.cs">
+      <Link>Properties\AssemblyInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
