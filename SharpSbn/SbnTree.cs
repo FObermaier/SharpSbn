@@ -162,7 +162,7 @@ namespace SharpSbn
         }
 
         /// <summary>
-        /// Method to collect all f
+        /// Method to collect all feature ids in the tree
         /// </summary>
         private void GatherFids()
         {
@@ -170,8 +170,8 @@ namespace SharpSbn
             {
                 if (sbnNode == null) continue;
 
-                foreach (var queryOid in sbnNode.QueryFids(0, 0, 255, 255))
-                    _featureIds.Add(queryOid);
+                foreach (var feature in sbnNode)
+                    _featureIds.Add(feature.Fid);
             }
         }
 
@@ -186,6 +186,21 @@ namespace SharpSbn
             FirstLeafNodeId = (int)Math.Pow(2, NumLevels - 1);
             CreateNodes((int)Math.Pow(2, NumLevels));
         }
+
+        /// <summary>
+        /// Gets a value indicating the 2d extent of the tree
+        /// </summary>
+        public Envelope Extent { get { return _header.Extent; }}
+
+        /// <summary>
+        /// Gets a value indicating the range of the z-ordinates
+        /// </summary>
+        public Interval ZRange { get { return _header.ZRange; }}
+
+        /// <summary>
+        /// Gets a value indicating the range of the m-ordinates
+        /// </summary>
+        public Interval MRange { get { return _header.MRange; } }
 
         /// <summary>
         /// Event raised when a rebuild of the tree is required, 
@@ -269,7 +284,7 @@ namespace SharpSbn
         /// <param name="envelope">The envelope in which to search for the feature</param>
         public void Remove(uint fid, Envelope envelope = null)
         {
-            envelope = envelope ?? _header.Envelope;
+            envelope = envelope ?? _header.Extent;
             var searchFeature = new SbnFeature(_header, fid, envelope);
             Root.Remove(searchFeature);
         }
@@ -330,7 +345,7 @@ namespace SharpSbn
         {
             var levels = (int)Math.Log(((featureCount - 1) / 8.0 + 1), 2) + 1;
             if (levels < 2) levels = 2;
-            if (levels > 15) levels = 15;
+            if (levels > 24) levels = 24;
 
             return levels;
         }
@@ -624,7 +639,7 @@ namespace SharpSbn
         /// <returns>A sbnfeature</returns>
         private SbnFeature ToSbnFeature(uint fid, IGeometry geometry)
         {
-            return new SbnFeature(_header.Envelope, fid, geometry.EnvelopeInternal);
+            return new SbnFeature(_header.Extent, fid, geometry.EnvelopeInternal);
         }
 
         /// <summary>
@@ -635,7 +650,7 @@ namespace SharpSbn
         /// <returns>A sbnfeature</returns>
         private SbnFeature ToSbnFeature(uint fid, Envelope envelope)
         {
-            return new SbnFeature(_header.Envelope, fid, envelope);
+            return new SbnFeature(_header.Extent, fid, envelope);
         }
 
         /// <summary>
@@ -645,11 +660,15 @@ namespace SharpSbn
         /// <returns>An enumeration of feature ids</returns>
         public IEnumerable<uint> QueryFids(Envelope extent)
         {
-            extent = _header.Envelope.Intersection(extent);
+            extent = _header.Extent.Intersection(extent);
             var feature = ToSbnFeature(0, extent);
 
-            return Root.QueryFids(feature.MinX, feature.MinY,
-                                  feature.MaxX, feature.MaxY);
+            var res = new List<uint>();
+            Root.QueryFids(feature.MinX, feature.MinY,
+                           feature.MaxX, feature.MaxY, res);
+            res.Sort();
+
+            return res;
         }
 
         /// <summary>

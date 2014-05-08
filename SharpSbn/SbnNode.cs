@@ -286,41 +286,52 @@ namespace SharpSbn
         /// <param name="miny">The lower y-ordinate</param>
         /// <param name="maxx">The upper x-ordinate</param>
         /// <param name="maxy">The upper y-ordinate</param>
+        /// <param name="fidList">A list of feature ids to add to</param>
         /// <returns>An enumeration of feature ids</returns>
-        public IEnumerable<uint> QueryFids(byte minx, byte miny, byte maxx, byte maxy)
+        internal void QueryFids(byte minx, byte miny, byte maxx, byte maxy, List<uint> fidList)
         {
             if (ContainedBy(minx, miny, maxx, maxy))
-                return GetAllFidsInNode();
+            {
+                AddAllFidsInNode(fidList);
+                return;
+            }
 
-            var fids = new List<uint>();
             foreach (var feature in this)
             {
                 if (feature.Intersects(minx, maxx, miny, maxy))
-                    fids.Add(feature.Fid);
+                    fidList.Add(feature.Fid);
             }
 
             if (Nid < _tree.FirstLeafNodeId)
             {
-                fids.AddRange(Child1.QueryFids(minx, miny, maxx, maxy));
-                fids.AddRange(Child2.QueryFids(minx, miny, maxx, maxy));
+                if (Child1.Intersects(minx, miny, maxx, maxy))
+                    Child1.QueryFids(minx, miny, maxx, maxy, fidList);
+                if (Child2.Intersects(minx, miny, maxx, maxy))
+                    Child2.QueryFids(minx, miny, maxx, maxy, fidList);
             }
-            return fids;
         }
 
         /// <summary>
-        /// Helper method to get all the ids of features in this node
+        /// Helper method to add all the ids of features in this node and its descendants
         /// </summary>
         /// <returns>An enumeration of feature ids</returns>
-        private IEnumerable<uint> GetAllFidsInNode()
+        private void AddAllFidsInNode(List<uint> fidList)
         {
-            var res = new List<uint>();
-            var bin = FirstBin;
-            while (bin != null)
+            if (FeatureCount > 0)
             {
-                res.AddRange(bin.GetAllFidsInBin());
-                bin = bin.Next;
+                var bin = FirstBin;
+                while (bin != null)
+                {
+                    fidList.AddRange(bin.GetAllFidsInBin());
+                    bin = bin.Next;
+                }
             }
-            return res;
+
+            if (Nid < _tree.FirstLeafNodeId)
+            {
+                Child1.AddAllFidsInNode(fidList);
+                Child2.AddAllFidsInNode(fidList);
+            }
         }
 
         /// <summary>
@@ -361,7 +372,7 @@ namespace SharpSbn
         }
 
         /// <summary>
-        /// Contains predicate function
+        /// ContainedBy predicate function
         /// </summary>
         /// <param name="minX">lower x-ordinate</param>
         /// <param name="minY">lower y-ordinate</param>
@@ -371,7 +382,7 @@ namespace SharpSbn
         internal bool ContainedBy(byte minX, byte minY, byte maxX, byte maxY)
         {
             return _minX >= minX && _maxX <= maxX &&
-                   _minX >= minY && _maxX <= minY;
+                   _minY >= minY && _maxY <= maxY;
         }
         public IEnumerator<SbnFeature> GetEnumerator()
         {

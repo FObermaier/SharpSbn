@@ -65,9 +65,16 @@ namespace SharpSbn
         public int FileLength { get; private set; }
 
         /// <summary>
-        /// Gets an envelope of the area covered by this index
+        /// Gets a value indicating the area covered by this index
         /// </summary>
-        internal Envelope Envelope { get { return new Envelope(XRange.Min, XRange.Max, YRange.Min, YRange.Max); } }
+        internal Envelope Extent 
+        {
+            get
+            {
+                return new Envelope(XRange.Min, XRange.Max, 
+                                    YRange.Min, YRange.Max);
+            } 
+        }
 
         /// <summary>
         /// Gets the x-ordinate range covered by this index

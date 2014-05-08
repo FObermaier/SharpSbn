@@ -39,6 +39,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NDepend) = preSolution
-		Project = ".\SbnSharp1.ndproj"
+		Project = ""
 	EndGlobalSection
 EndGlobal

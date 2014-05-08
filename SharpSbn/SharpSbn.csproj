@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClampUtility.cs" />
     <Compile Include="GeometryMetricExtensions.cs" />
     <Compile Include="NumPySlicing.cs" />
     <Compile Include="BinaryIOExtensions.cs" />
@@ -52,6 +53,7 @@
     <Compile Include="SbnException.cs" />
     <Compile Include="SbnHeader.cs" />
     <Compile Include="SbnNode.cs" />
+    <Compile Include="SbnQueryOnlyTree.cs" />
     <Compile Include="SbnTree.cs" />
     <Compile Include="SbnTreeRebuildRequiredEventArgs.cs" />
   </ItemGroup>

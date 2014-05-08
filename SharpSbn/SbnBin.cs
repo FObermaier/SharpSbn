@@ -180,5 +180,14 @@ namespace SharpSbn
                 if (this[i].Equals(feature)) return i;
             return -1;
         }
+
+        internal void CopyTo(SbnFeature[] res, int offset)
+        {
+            if (offset + NumFeatures > res.Length)
+                throw new ArgumentException("Array not large enough", "res");
+
+            for (var i = 0; i < NumFeatures; i++)
+                res[offset + i] = this[i];
+        }
     }
 }

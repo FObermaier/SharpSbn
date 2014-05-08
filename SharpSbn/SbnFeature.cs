@@ -1,7 +1,5 @@
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
-using GeoAPI.DataStructures;
 using GeoAPI.Geometries;
 
 namespace SharpSbn
@@ -46,10 +44,10 @@ namespace SharpSbn
         public SbnFeature(SbnHeader header, uint fid, Envelope extent)
         {
             _fid = fid;
-            MinX = ScaleLower(extent.MinX, header.XRange);
-            MinY = ScaleLower(extent.MinY, header.YRange);
-            MaxX = ScaleUpper(extent.MaxX, header.XRange);
-            MaxY = ScaleUpper(extent.MaxY, header.YRange);
+            MinX = extent.MinX.ScaleLower(header.XRange);
+            MinY = extent.MinY.ScaleLower(header.YRange);
+            MaxX = extent.MaxX.ScaleUpper(header.XRange);
+            MaxY = extent.MaxY.ScaleUpper(header.YRange);
         }
 
         /// <summary>
@@ -61,13 +59,14 @@ namespace SharpSbn
         public SbnFeature(Envelope sfExtent, uint fid, Envelope extent)
         {
             _fid = fid;
-            var xrange = Interval.Create(sfExtent.MinX, sfExtent.MaxX);
-            var yrange = Interval.Create(sfExtent.MinY, sfExtent.MaxY);
+            ClampUtility.Clamp(sfExtent, extent, out MinX, out MinY, out MaxX, out MaxY);
+            //var xrange = Interval.Create(sfExtent.MinX, sfExtent.MaxX);
+            //var yrange = Interval.Create(sfExtent.MinY, sfExtent.MaxY);
 
-            MinX = ScaleLower(extent.MinX, xrange);
-            MinY = ScaleLower(extent.MinY, yrange);
-            MaxX = ScaleUpper(extent.MaxX, xrange);
-            MaxY = ScaleUpper(extent.MaxY, yrange);
+            //MinX = ClampUtility.ScaleLower(extent.MinX, xrange);
+            //MinY = ClampUtility.ScaleLower(extent.MinY, yrange);
+            //MaxX = ClampUtility.ScaleUpper(extent.MaxX, xrange);
+            //MaxY = ClampUtility.ScaleUpper(extent.MaxY, yrange);
         }
 
         public SbnFeature(byte[] featureBytes)
@@ -121,27 +120,6 @@ namespace SharpSbn
         //    writer.Write(MaxY);
         //    writer.WriteBE(_fid);
         //}
-
-        #region private utility functions
-        private static byte ScaleLower(double value, Interval range)
-        {
-            var min = ((value - range.Min) / range.Width * 255.0);
-            // not sure why this rounding is needed, but it is
-            var modMin = (min % 1 - .005) % 1 + (int)min;
-            var res = (int)(Math.Floor(modMin));
-            if (res < 0) res = 0;
-            return (byte)res;
-        }
-
-        private static byte ScaleUpper(double value, Interval range)
-        {
-            var max = ((value - range.Min) / range.Width * 255.0);
-            var modMax = (max % 1 + .005) % 1 + (int)max;
-            var res = (int)Math.Ceiling(modMax);
-            if (res > 255) res = 255;
-            return (byte)res;
-        }
-        #endregion
 
         public bool Equals(SbnFeature other)
         {

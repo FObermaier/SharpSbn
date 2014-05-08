@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -130,7 +131,7 @@ namespace SbnSharp.Test
                 Assert.AreEqual(fdt.Rows.Count, tree.FeatureCount);
 
                 Assert.AreEqual(fdt.Rows.Count, tree.QueryFids(extent).Count());
-                var shrunk = extent.Grow(-0.2 * extent.Width, -0.2 * extent.Height);
+                var shrunk = extent.Grow(-0.4 * extent.Width, -0.3 * extent.Height);
                 Assert.Less(tree.QueryFids(shrunk).Count(), fdt.Rows.Count);
 
                 Console.WriteLine();
@@ -159,6 +160,7 @@ namespace SbnSharp.Test
 
         [TestCase("data\\riksgrs.sbn")]
         [TestCase("data\\road_r.sbn")]
+        [TestCase("data\\road_r_modified.sbn")]
         [TestCase("data\\S2_jarnvag_besk_polyline.sbn")]
         public void TestToText(string sbnFile)
         {
@@ -174,6 +176,81 @@ namespace SbnSharp.Test
             var sbnTestFile = Path.ChangeExtension(sbnFile, null) + "_test.sbn";
             Assert.DoesNotThrow(() => sbn.Save(sbnTestFile));
             Assert.DoesNotThrow(() => SbnTree.SbnToText(sbnTestFile, new StreamWriter(File.OpenWrite(Path.ChangeExtension(sbnTestFile, ".sbn.txt")))));
+        }
+
+        [TestCase("data\\road_r.sbn")]
+        [TestCase("data\\road_r_modified.sbn")]
+        public void TestQueryTime(string sbnFile)
+        {
+            if (!File.Exists(sbnFile))
+                throw new IgnoreException("File '" + sbnFile + "' not found!");
+
+            var sw = new Stopwatch();
+            SbnTree sbn = null;
+            sw.Start();
+            Assert.DoesNotThrow(() => sbn = SbnTree.Load(sbnFile));
+            sw.Stop();
+            Console.WriteLine("SbnTree read in {0:N0} ticks", sw.ElapsedTicks);
+
+            var fullExtent = sbn.Extent;
+            for (var i = 0; i < 10; i++)
+            {
+                sw.Restart();
+                var fids = new List<uint>(sbn.QueryFids(fullExtent));
+                sw.Stop();
+                Console.WriteLine("Querying full in {0:N0} ticks ({1} ids)", sw.ElapsedTicks, fids.Count);
+            }
+
+            var partialExtent = new Envelope(
+                fullExtent.MinX + 0.4 * fullExtent.Width,
+                fullExtent.MaxX - 0.4 * fullExtent.Width,
+                fullExtent.MinY + 0.3 * fullExtent.Height,
+                fullExtent.MaxY - 0.3 * fullExtent.Height);
+            for (var i = 0; i < 10; i++)
+            {
+                sw.Restart();
+                var fids = new List<uint>(sbn.QueryFids(partialExtent));
+                sw.Stop();
+                Console.WriteLine("Querying part in {0:N0} ticks ({1} ids)", sw.ElapsedTicks, fids.Count);
+            }
+        }
+
+        [TestCase("data\\road_r.sbn")]
+        [TestCase("data\\road_r_modified.sbn")]
+        public void TestQueryTime2(string sbnFile)
+        {
+            if (!File.Exists(sbnFile))
+                throw new IgnoreException("File '" + sbnFile + "' not found!");
+
+            var sw = new Stopwatch();
+            SbnQueryOnlyTree sbn = null;
+            SbnQueryOnlyTree.DefaultMaxCacheLevel = 24;
+            sw.Start();
+            Assert.DoesNotThrow(() => sbn = SbnQueryOnlyTree.Open(sbnFile));
+            sw.Stop();
+            Console.WriteLine("SbnTree read in {0:N0} ticks", sw.ElapsedTicks);
+
+            var fullExtent = sbn.Extent;
+            for (var i = 0; i < 10; i++)
+            {
+                sw.Restart();
+                var fids = new List<uint>(sbn.QueryFids(fullExtent));
+                sw.Stop();
+                Console.WriteLine("Querying full in {0:N0} ticks ({1} ids)", sw.ElapsedTicks, fids.Count);
+            }
+
+            var partialExtent = new Envelope(
+                fullExtent.MinX + 0.4 * fullExtent.Width,
+                fullExtent.MaxX - 0.4 * fullExtent.Width,
+                fullExtent.MinY + 0.3 * fullExtent.Height,
+                fullExtent.MaxY - 0.3 * fullExtent.Height);
+            for (var i = 0; i < 10; i++)
+            {
+                sw.Restart();
+                var fids = new List<uint>(sbn.QueryFids(partialExtent));
+                sw.Stop();
+                Console.WriteLine("Querying part in {0:N0} ticks ({1} ids)", sw.ElapsedTicks, fids.Count);
+            }
         }
 
         private static ICollection<Tuple<uint, IGeometry>> GetFeatures(FeatureDataTable fdt)
