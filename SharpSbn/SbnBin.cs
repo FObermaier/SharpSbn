@@ -6,7 +6,8 @@ namespace SharpSbn
 {
     internal class SbnBin
     {
-        private readonly byte[] _buffer;
+        //private readonly byte[] _buffer;
+        private readonly SbnFeature[] _features;
         private SbnBin _next;
 
         /// <summary>
@@ -14,7 +15,8 @@ namespace SharpSbn
         /// </summary>
         internal SbnBin()
         {
-            _buffer = new byte[800];
+            //_buffer = new byte[800];
+            _features = new SbnFeature[100];
         }
 
         /// <summary>
@@ -54,9 +56,10 @@ namespace SharpSbn
 
                 if (index < 100)
                 {
-                    var featureBytes = new byte[8];
-                    Buffer.BlockCopy(_buffer, index*8, featureBytes, 0, 8);
-                    return new SbnFeature(featureBytes);
+                    return _features[index];
+                    //var featureBytes = new byte[8];
+                    //Buffer.BlockCopy(_buffer, index*8, featureBytes, 0, 8);
+                    //return new SbnFeature(featureBytes);
                 }
 
                 throw new ArgumentOutOfRangeException("index");
@@ -68,7 +71,8 @@ namespace SharpSbn
             }
             private set
             {
-                Buffer.BlockCopy(value.AsBytes(), 0, _buffer, index *8, 8);
+                //Buffer.BlockCopy(value.AsBytes(), 0, _buffer, index *8, 8);
+                _features[index] = value;
             }
         }
         internal void AddFeature(SbnFeature feature)
@@ -93,7 +97,7 @@ namespace SharpSbn
                 throw new ArgumentException("Array not large enough", "res");
 
             for (var i = 0; i < NumFeatures; i++)
-                res[offset + i] = this[i];
+                res[offset + i] = _features[i];
         }
 
         internal IEnumerable<uint> GetAllFidsInBin()
@@ -101,7 +105,8 @@ namespace SharpSbn
             var res = new uint[NumFeatures];
             for (var i = 0; i < NumFeatures; i++)
             {
-                res[i] = BitConverter.ToUInt32(_buffer, 4 + i * 8);
+                res[i] = _features[i].Fid;
+                //res[i] = BitConverter.ToUInt32(_buffer, 4 + i * 8);
             }
             return res;
         }
@@ -120,22 +125,35 @@ namespace SharpSbn
 
         internal void RemoveAt(int index)
         {
-            var offset = index * 8;
-            var size = 800 - 8 - offset;
-            if (size > 0)
+            if (index < NumFeatures - 1)
             {
-                Buffer.BlockCopy(_buffer, offset + 8, _buffer, offset, size);
-                if (Next != null)
-                {
-                    this[99] = Next[0];
-                    Next.RemoveFeature(Next[0]);
-                }
-                else
-                {
-                    Buffer.BlockCopy(BitConverter.GetBytes((long)0), 0, _buffer, NumFeatures * 8, 8);
-                    NumFeatures--;
-                }
+                for (var i = index + 1; i < 99; i++)
+                    _features[i] = _features[i + 1];
+                _features[99] = Next[0];
+                _next.RemoveAt(0);
             }
+            else
+            {
+                _features[index] = new SbnFeature();
+                NumFeatures--;
+            }
+
+            //var offset = index * 8;
+            //var size = 800 - 8 - offset;
+            //if (size > 0)
+            //{
+            //    //Buffer.BlockCopy(_buffer, offset + 8, _buffer, offset, size);
+            //    if (Next != null)
+            //    {
+            //        this[99] = Next[0];
+            //        Next.RemoveFeature(Next[0]);
+            //    }
+            //    else
+            //    {
+            //        Buffer.BlockCopy(BitConverter.GetBytes((long)0), 0, _buffer, NumFeatures * 8, 8);
+            //        NumFeatures--;
+            //    }
+            //}
         }
 
         internal void RemoveFeature(SbnFeature feature)
@@ -175,19 +193,33 @@ namespace SharpSbn
 
         private void ReadBuffer(BinaryReader reader)
         {
-            reader.BaseStream.Read(_buffer, 0, NumFeatures * 8);
-            for (var i = 0; i < NumFeatures; i++)
-                Array.Reverse(_buffer, 4+8*i, 4);
+            using (var msReader = new BinaryReader(new MemoryStream(reader.ReadBytes(NumFeatures*8))))
+            {
+                for (var i = 0; i < NumFeatures; i++)
+                {
+                    _features[i] = new SbnFeature(msReader);
+                }
+            }
+            //reader.BaseStream.Read(_buffer, 0, NumFeatures*8);
+            //for (var i = 0; i < NumFeatures; i++)
+            //    Array.Reverse(_buffer, 4+8*i, 4);
         }
+
         private void WriteBuffer(BinaryWriter writer)
         {
             var size = NumFeatures*8;
             var buffer = new byte[size];
-            Buffer.BlockCopy(_buffer, 0, buffer, 0, size);
-            for (var i = 0; i < NumFeatures; i++)
-                Array.Reverse(buffer, 4 + 8 * i, 4);
-
-            writer.Write(buffer, 0, size);
+            using (var msWriter = new BinaryWriter(new MemoryStream(buffer)))
+            {
+                for (var i = 0; i < NumFeatures; i++)
+                    _features[i].Write(msWriter);
+                var ms = (MemoryStream)msWriter.BaseStream;
+                writer.Write(ms.ToArray(), 0, size);
+            }
+            //Buffer.BlockCopy(_buffer, 0, buffer, 0, size);
+            //for (var i = 0; i < NumFeatures; i++)
+            //    Array.Reverse(buffer, 4 + 8 * i, 4);
+            //writer.Write(buffer, 0, size);
         }
     }
 }

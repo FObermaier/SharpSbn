@@ -35,12 +35,12 @@ namespace SharpSbn
             self.Write(buffer);
         }
 
-        //internal static void WriteBE(this BinaryWriter self, UInt32 value)
-        //{
-        //    var buffer = BitConverter.GetBytes(value);
-        //    Array.Reverse(buffer);
-        //    self.Write(buffer);
-        //}
+        internal static void WriteBE(this BinaryWriter self, UInt32 value)
+        {
+            var buffer = BitConverter.GetBytes(value);
+            Array.Reverse(buffer);
+            self.Write(buffer);
+        }
 
         internal static void WriteBE(this BinaryWriter self, Double value)
         {

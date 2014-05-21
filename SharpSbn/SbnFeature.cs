@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using GeoAPI.Geometries;
 
@@ -22,18 +23,18 @@ namespace SharpSbn
         [FieldOffset(3)]
         internal readonly byte MaxY;
 
-        ///// <summary>
-        ///// Creates an instance of this class using a binary reader
-        ///// </summary>
-        ///// <param name="sr">The binary reader</param>
-        //internal SbnFeature(BinaryReader sr)
-        //{
-        //    MinX = sr.ReadByte();
-        //    MinY = sr.ReadByte();
-        //    MaxX = sr.ReadByte();
-        //    MaxY = sr.ReadByte();
-        //    _fid = sr.ReadUInt32BE();
-        //}
+        /// <summary>
+        /// Creates an instance of this class using a binary reader
+        /// </summary>
+        /// <param name="sr">The binary reader</param>
+        internal SbnFeature(BinaryReader sr)
+        {
+            MinX = sr.ReadByte();
+            MinY = sr.ReadByte();
+            MaxX = sr.ReadByte();
+            MaxY = sr.ReadByte();
+            _fid = sr.ReadUInt32BE();
+        }
 
         /// <summary>
         /// Creates an instance of this class using the provided <paramref name="fid"/> and <paramref name="extent"/>
@@ -42,12 +43,8 @@ namespace SharpSbn
         /// <param name="fid">The feature's id</param>
         /// <param name="extent">The feature's extent</param>
         public SbnFeature(SbnHeader header, uint fid, Envelope extent)
+            :this(header.Extent, fid, extent)
         {
-            _fid = fid;
-            MinX = extent.MinX.ScaleLower(header.XRange);
-            MinY = extent.MinY.ScaleLower(header.YRange);
-            MaxX = extent.MaxX.ScaleUpper(header.XRange);
-            MaxY = extent.MaxY.ScaleUpper(header.YRange);
         }
 
         /// <summary>
@@ -62,14 +59,14 @@ namespace SharpSbn
             ClampUtility.Clamp(sfExtent, extent, out MinX, out MinY, out MaxX, out MaxY);
         }
 
-        public SbnFeature(byte[] featureBytes)
-        {
-            MinX = featureBytes[0];
-            MinY = featureBytes[1];
-            MaxX = featureBytes[2];
-            MaxY = featureBytes[3];
-            _fid = BitConverter.ToUInt32(featureBytes, 4);
-        }
+        //public SbnFeature(byte[] featureBytes)
+        //{
+        //    MinX = featureBytes[0];
+        //    MinY = featureBytes[1];
+        //    MaxX = featureBytes[2];
+        //    MaxY = featureBytes[3];
+        //    _fid = BitConverter.ToUInt32(featureBytes, 4);
+        //}
 
         ///// <summary>
         ///// Method to get an approximate extent of the this feature
@@ -101,18 +98,18 @@ namespace SharpSbn
         /// </summary>
         public uint Fid { get { return _fid; }}
 
-        ///// <summary>
-        ///// Method to write the feature to an index
-        ///// </summary>
-        ///// <param name="writer"></param>
-        //internal void Write(BinaryWriter writer)
-        //{
-        //    writer.Write(MinX);
-        //    writer.Write(MinY);
-        //    writer.Write(MaxX);
-        //    writer.Write(MaxY);
-        //    writer.WriteBE(_fid);
-        //}
+        /// <summary>
+        /// Method to write the feature to an index
+        /// </summary>
+        /// <param name="writer"></param>
+        internal void Write(BinaryWriter writer)
+        {
+            writer.Write(MinX);
+            writer.Write(MinY);
+            writer.Write(MaxX);
+            writer.Write(MaxY);
+            writer.WriteBE(_fid);
+        }
 
         public bool Equals(SbnFeature other)
         {
