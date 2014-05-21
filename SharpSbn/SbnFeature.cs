@@ -60,13 +60,6 @@ namespace SharpSbn
         {
             _fid = fid;
             ClampUtility.Clamp(sfExtent, extent, out MinX, out MinY, out MaxX, out MaxY);
-            //var xrange = Interval.Create(sfExtent.MinX, sfExtent.MaxX);
-            //var yrange = Interval.Create(sfExtent.MinY, sfExtent.MaxY);
-
-            //MinX = ClampUtility.ScaleLower(extent.MinX, xrange);
-            //MinY = ClampUtility.ScaleLower(extent.MinY, yrange);
-            //MaxX = ClampUtility.ScaleUpper(extent.MaxX, xrange);
-            //MaxY = ClampUtility.ScaleUpper(extent.MaxY, yrange);
         }
 
         public SbnFeature(byte[] featureBytes)
