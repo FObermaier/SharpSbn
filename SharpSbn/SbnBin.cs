@@ -18,6 +18,19 @@ namespace SharpSbn
         }
 
         /// <summary>
+        /// Gets reference to a next bin
+        /// </summary>
+        public SbnBin Next
+        {
+            get { return _next; }
+            internal set
+            {
+                _next = value;
+                _next.Offset = Offset + 100;
+            }
+        }
+
+        /// <summary>
         /// Gets the number of features in bin
         /// </summary>
         public int NumFeatures { get; private set; }
@@ -58,18 +71,39 @@ namespace SharpSbn
                 Buffer.BlockCopy(value.AsBytes(), 0, _buffer, index *8, 8);
             }
         }
-
-        /// <summary>
-        /// Gets reference to a next bin
-        /// </summary>
-        public SbnBin Next
+        internal void AddFeature(SbnFeature feature)
         {
-            get { return _next; }
-            internal set
+            this[NumFeatures++] = feature;
+        }
+
+        //internal SbnBin Clone()
+        //{
+        //    //return this;
+
+        //    var res = new SbnBin { NumFeatures = NumFeatures };
+        //    Buffer.BlockCopy(_buffer, 0, res._buffer, 0, 800);
+        //    if (Next != null) res.Next = Next.Clone();
+
+        //    return res;
+        //}
+
+        internal void CopyTo(SbnFeature[] res, int offset)
+        {
+            if (offset + NumFeatures > res.Length)
+                throw new ArgumentException("Array not large enough", "res");
+
+            for (var i = 0; i < NumFeatures; i++)
+                res[offset + i] = this[i];
+        }
+
+        internal IEnumerable<uint> GetAllFidsInBin()
+        {
+            var res = new uint[NumFeatures];
+            for (var i = 0; i < NumFeatures; i++)
             {
-                _next = value;
-                _next.Offset = Offset + 100;
+                res[i] = BitConverter.ToUInt32(_buffer, 4 + i * 8);
             }
+            return res;
         }
 
         /// <summary>
@@ -84,11 +118,31 @@ namespace SharpSbn
             return bid;
         }
 
-        private void ReadBuffer(BinaryReader reader)
+        internal void RemoveAt(int index)
         {
-            reader.BaseStream.Read(_buffer, 0, NumFeatures * 8);
-            for (var i = 0; i < NumFeatures; i++)
-                Array.Reverse(_buffer, 4+8*i, 4);
+            var offset = index * 8;
+            var size = 800 - 8 - offset;
+            if (size > 0)
+            {
+                Buffer.BlockCopy(_buffer, offset + 8, _buffer, offset, size);
+                if (Next != null)
+                {
+                    this[99] = Next[0];
+                    Next.RemoveFeature(Next[0]);
+                }
+                else
+                {
+                    Buffer.BlockCopy(BitConverter.GetBytes((long)0), 0, _buffer, NumFeatures * 8, 8);
+                    NumFeatures--;
+                }
+            }
+        }
+
+        internal void RemoveFeature(SbnFeature feature)
+        {
+            var index = FindFeature(feature);
+            if (index >= 0)
+                RemoveAt(index);
         }
 
         /// <summary>
@@ -101,7 +155,7 @@ namespace SharpSbn
         {
             if (sbxWriter != null)
             {
-                sbxWriter.WriteBE((int) (sbnWriter.BaseStream.Position/2));
+                sbxWriter.WriteBE((int)(sbnWriter.BaseStream.Position / 2));
                 sbxWriter.WriteBE(NumFeatures * 4);
             }
             sbnWriter.WriteBE(bid++);
@@ -112,6 +166,19 @@ namespace SharpSbn
                 Next.Write(ref bid, sbnWriter, sbxWriter);
         }
 
+        private int FindFeature(SbnFeature feature)
+        {
+            for (var i = 0; i < NumFeatures; i++)
+                if (this[i].Equals(feature)) return i;
+            return -1;
+        }
+
+        private void ReadBuffer(BinaryReader reader)
+        {
+            reader.BaseStream.Read(_buffer, 0, NumFeatures * 8);
+            for (var i = 0; i < NumFeatures; i++)
+                Array.Reverse(_buffer, 4+8*i, 4);
+        }
         private void WriteBuffer(BinaryWriter writer)
         {
             var size = NumFeatures*8;
@@ -121,73 +188,6 @@ namespace SharpSbn
                 Array.Reverse(buffer, 4 + 8 * i, 4);
 
             writer.Write(buffer, 0, size);
-        }
-
-        internal SbnBin Clone()
-        {
-            var res = new SbnBin {NumFeatures = NumFeatures};
-            Buffer.BlockCopy(_buffer, 0, res._buffer, 0, 800);
-            if (Next != null) res.Next = Next.Clone();
-
-            return res;
-        }
-
-        internal IEnumerable<uint> GetAllFidsInBin()
-        {
-            var res = new uint[NumFeatures];
-            for (var i = 0; i < NumFeatures; i++)
-            {
-                res[i] = BitConverter.ToUInt32(_buffer, 4 + i * 8);
-            }
-            return res;
-        }
-
-        internal void AddFeature(SbnFeature feature)
-        {
-            this[NumFeatures++] = feature;
-        }
-
-        internal void RemoveFeature(SbnFeature feature)
-        {
-            var index = FindFeature(feature);
-            if (index >= 0) 
-                RemoveAt(index);
-        }
-
-        internal void RemoveAt(int index)
-        {
-            var offset = index * 8;
-            var size = 800 - 8 - offset;
-            if (size > 0)
-            {
-                Buffer.BlockCopy(_buffer, offset+8, _buffer, offset, size);
-                if (Next != null)
-                {
-                    this[99] = Next[0];
-                    Next.RemoveFeature(Next[0]);
-                }
-                else
-                {
-                    Buffer.BlockCopy(BitConverter.GetBytes((long)0), 0, _buffer, NumFeatures*8, 8);
-                    NumFeatures--;
-                }
-            }
-        }
-
-        private int FindFeature(SbnFeature feature)
-        {
-            for (var i = 0; i < NumFeatures; i++)
-                if (this[i].Equals(feature)) return i;
-            return -1;
-        }
-
-        internal void CopyTo(SbnFeature[] res, int offset)
-        {
-            if (offset + NumFeatures > res.Length)
-                throw new ArgumentException("Array not large enough", "res");
-
-            for (var i = 0; i < NumFeatures; i++)
-                res[offset + i] = this[i];
         }
     }
 }

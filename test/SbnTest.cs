@@ -224,11 +224,11 @@ namespace SbnSharp.Test
 
             var sw = new Stopwatch();
             SbnQueryOnlyTree sbn = null;
-            SbnQueryOnlyTree.DefaultMaxCacheLevel = 24;
+            SbnQueryOnlyTree.DefaultMaxCacheLevel = 12;
             sw.Start();
             Assert.DoesNotThrow(() => sbn = SbnQueryOnlyTree.Open(sbnFile));
             sw.Stop();
-            Console.WriteLine("SbnTree read in {0:N0} ticks", sw.ElapsedTicks);
+            Console.WriteLine("SbnQueryOnlyTree opened in {0:N0} ticks", sw.ElapsedTicks);
 
             var fullExtent = sbn.Extent;
             for (var i = 0; i < 10; i++)
@@ -276,7 +276,7 @@ namespace SbnSharp.Test
         [Test]
         public void TestGetNodeLevel()
         {
-            var tree = new SbnTree(new SbnHeader(8, Interval.Create(-180, 180), Interval.Create(-90, 90), Interval.Create(), Interval.Create()));
+            var tree = new SbnTree(new SbnHeader(256, Interval.Create(-180, 180), Interval.Create(-90, 90), Interval.Create(), Interval.Create()));
             var node = new SbnNode(tree, 1);
             Assert.AreEqual(1, node.Level);
 

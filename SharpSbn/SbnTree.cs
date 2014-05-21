@@ -1,14 +1,18 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Xml.Linq;
+using System.Threading;
 using GeoAPI.DataStructures;
 using GeoAPI.Geometries;
 
 namespace SharpSbn
 {
+    /// <summary>
+    /// A Sbn spatial tree
+    /// </summary>
     public class SbnTree
     {
 #if !PCL
@@ -97,6 +101,7 @@ namespace SharpSbn
         private readonly SbnHeader _header = new SbnHeader();
         internal SbnNode[] Nodes;
         private readonly HashSet<uint> _featureIds;
+        private readonly object _syncRoot = new object();
 
         /// <summary>
         /// Private preparation of the tree
@@ -113,6 +118,8 @@ namespace SharpSbn
         private SbnTree(BinaryReader reader)
             : this()
         {
+            Monitor.Enter(_syncRoot);
+
             _header = new SbnHeader();
             _header.Read(reader);
 
@@ -152,6 +159,9 @@ namespace SharpSbn
             //Assertions
             Debug.Assert(reader.BaseStream.Position == reader.BaseStream.Length);
             Debug.Assert(_featureIds.Count == _header.NumRecords);
+
+            
+            Monitor.Exit(_syncRoot);
         }
 
         public SbnTree(SbnHeader header)
@@ -159,6 +169,22 @@ namespace SharpSbn
         {
             _header = header;
             BuildTree(_header.NumRecords);
+        }
+
+        /// <summary>
+        /// Gets a value Synchronization object
+        /// </summary>
+        public object SyncRoot { get { return _syncRoot; } }
+
+        public bool IsSynchronized
+        {
+            get
+            {
+                if (!Monitor.TryEnter(_syncRoot))
+                    return false;
+                Monitor.Exit(_syncRoot);
+                return true;
+            }
         }
 
         /// <summary>
@@ -230,6 +256,9 @@ namespace SharpSbn
             // Convert to an sbnfeature
             var sbnFeature = ToSbnFeature(fid, geometry.EnvelopeInternal);
 
+            // lock the tree
+            Monitor.Enter(_syncRoot);
+
             // Has the tree already been built?
             if (Built)
             {
@@ -237,6 +266,7 @@ namespace SharpSbn
                 if (!Root.Contains(sbnFeature.MinX, sbnFeature.MinY, sbnFeature.MaxX, sbnFeature.MaxY) )
                 {
                     OnRebuildRequired(new SbnTreeRebuildRequiredEventArgs(fid, geometry));
+                    Monitor.Exit(_syncRoot);
                     return;
                 }
 
@@ -253,6 +283,10 @@ namespace SharpSbn
             
             //Insert the feature
             Insert(sbnFeature);
+
+            // unlock the tree
+            Monitor.Exit(_syncRoot);
+
         }
 
         /// <summary>
@@ -284,9 +318,13 @@ namespace SharpSbn
         /// <param name="envelope">The envelope in which to search for the feature</param>
         public void Remove(uint fid, Envelope envelope = null)
         {
+            Monitor.Enter(_syncRoot);
+
             envelope = envelope ?? _header.Extent;
             var searchFeature = new SbnFeature(_header, fid, envelope);
             Root.Remove(searchFeature);
+
+            Monitor.Exit(_syncRoot);
         }
 
         /// <summary>
@@ -362,6 +400,8 @@ namespace SharpSbn
         /// <param name="sbnName">The filename</param>
         public void Save(string sbnName)
         {
+            Monitor.Enter(_syncRoot);
+
             if (string.IsNullOrEmpty(sbnName))
                 throw new ArgumentNullException("sbnName");
 
@@ -375,6 +415,8 @@ namespace SharpSbn
             using (var sbxStream = new FileStream(sbxName, FileMode.Create, FileAccess.Write, FileShare.None))
             using (var sbxWriter = new BinaryWriter(sbxStream))
                 Write(sbnWriter, sbxWriter);
+
+            Monitor.Exit(_syncRoot);
         }
 #endif
 
@@ -627,7 +669,7 @@ namespace SharpSbn
                 }
             }
 #else
-            throw new NotSupportedException();
+            //We are not verbose so we don't do anything
 #endif
         }
 
@@ -660,12 +702,19 @@ namespace SharpSbn
         /// <returns>An enumeration of feature ids</returns>
         public IEnumerable<uint> QueryFids(Envelope extent)
         {
-            extent = _header.Extent.Intersection(extent);
-            var feature = ToSbnFeature(0, extent);
-
             var res = new List<uint>();
-            Root.QueryFids(feature.MinX, feature.MinY,
-                           feature.MaxX, feature.MaxY, res);
+
+            Monitor.Enter(_syncRoot);
+
+            extent = _header.Extent.Intersection(extent);
+            byte minx, miny, maxx, maxy;
+            ClampUtility.Clamp(_header.Extent, extent,
+                               out minx, out miny, out maxx, out maxy);
+
+            Root.QueryFids(minx, miny, maxx, maxy, res);
+
+            Monitor.Exit(_syncRoot);
+
             res.Sort();
 
             return res;
@@ -723,12 +772,12 @@ namespace SharpSbn
 
             foreach (var tuple in geoms)
             {
-                Interval x2range, y2range, z2range, m2range;
-                tuple.Item2.GetMetric(out x2range, out y2range, out z2range, out m2range);
-                xrange = xrange.ExpandedByInterval(x2range);
-                yrange = yrange.ExpandedByInterval(y2range);
-                zrange = zrange.ExpandedByInterval(z2range);
-                mrange = mrange.ExpandedByInterval(m2range);
+                Interval x2Range, y2Range, z2Range, m2Range;
+                tuple.Item2.GetMetric(out x2Range, out y2Range, out z2Range, out m2Range);
+                xrange = xrange.ExpandedByInterval(x2Range);
+                yrange = yrange.ExpandedByInterval(y2Range);
+                zrange = zrange.ExpandedByInterval(z2Range);
+                mrange = mrange.ExpandedByInterval(m2Range);
             }
         }
 

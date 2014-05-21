@@ -403,13 +403,13 @@ namespace SharpSbn
             private SbnBin _currentBin;
 
             private int _index = -1;
-            public SbnFeatureEnumerator(SbnBin firstBin)
+
+            internal SbnFeatureEnumerator(SbnBin firstBin)
             {
-                if (firstBin != null)
-                    _firstBin = firstBin.Clone();
+                _firstBin = firstBin;
             }
 
-            public void Dispose()
+            void IDisposable.Dispose()
             {
                 _firstBin = null;
             }

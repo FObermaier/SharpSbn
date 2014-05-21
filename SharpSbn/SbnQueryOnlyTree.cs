@@ -25,7 +25,7 @@ namespace SharpSbn
         /// <summary>
         /// Method to open an sbn index file
         /// </summary>
-        /// <param name="sbnFilename"The sbn index filename></param>
+        /// <param name="sbnFilename">The sbn index filename></param>
         /// <returns>An sbn index query structure</returns>
         public static SbnQueryOnlyTree Open(string sbnFilename)
         {
@@ -111,7 +111,15 @@ namespace SharpSbn
             byte minx, miny, maxx, maxy;
             ClampUtility.Clamp(_sbnHeader.Extent, envelope, out minx, out miny, out maxx, out maxy);
 
-            Root.QueryFids(minx, miny, maxx, maxy, res);
+            var nodes = new List<SbnQueryOnlyNode>();
+            Root.QueryNodes(minx, miny, maxx, maxy, nodes);
+            nodes.Sort();
+            foreach (var node in nodes)
+            {
+                node.QueryFids(minx, miny, maxx, maxy, res, false);
+            }
+
+            //Root.QueryFids(minx, miny, maxx, maxy, res);
 
             res.Sort();
             return res;
@@ -188,7 +196,7 @@ namespace SharpSbn
         public Interval MRange { get { return _sbnHeader.MRange; } }
 
 
-        private class SbnQueryOnlyNode
+        private class SbnQueryOnlyNode : IComparable, IComparable<SbnQueryOnlyNode>
         {
             private readonly SbnQueryOnlyTree _tree;
             private readonly SbnFeature[] _features;
@@ -241,11 +249,11 @@ namespace SharpSbn
                 return res;
             }
 
-            internal void QueryFids(byte minx, byte miny, byte maxx, byte maxy, List<uint> fids)
+            internal void QueryFids(byte minx, byte miny, byte maxx, byte maxy, List<uint> fids, bool checkChildren)
             {
                 if (ContainedBy(minx, miny, maxx, maxy))
                 {
-                    AddAllFidsInNode(fids);
+                    AddAllFidsInNode(fids, checkChildren);
                     return;
                 }
 
@@ -255,30 +263,30 @@ namespace SharpSbn
                         fids.Add(feature.Fid);
                 }
 
-                if (Nid < _tree.FirstLeafNodeId)
+                if (checkChildren && Nid < _tree.FirstLeafNodeId)
                 {
                     var child = GetChild(0);
                     if (child.Intersects(minx, miny, maxx, maxy))
-                        child.QueryFids(minx, miny, maxx, maxy, fids);
+                        child.QueryFids(minx, miny, maxx, maxy, fids, true);
 
                     child = GetChild(1);
                     if (child.Intersects(minx, miny, maxx, maxy))
-                        child.QueryFids(minx, miny, maxx, maxy, fids);
+                        child.QueryFids(minx, miny, maxx, maxy, fids, true);
                 }
             }
 
-            private void AddAllFidsInNode(List<uint> list)
+            private void AddAllFidsInNode(List<uint> list, bool checkChildren)
             {
                 foreach (var sbnFeature in _features)
                 {
                     list.Add(sbnFeature.Fid);
                 }
 
-                if (Nid >= _tree.FirstLeafNodeId)
-                    return;
-
-                GetChild(0).AddAllFidsInNode(list);
-                GetChild(1).AddAllFidsInNode(list);
+                if (checkChildren && Nid < _tree.FirstLeafNodeId)
+                {
+                    GetChild(0).AddAllFidsInNode(list, true);
+                    GetChild(1).AddAllFidsInNode(list, true);
+                }
             }
 
             private SbnQueryOnlyNode GetChild(int childIndex)
@@ -378,6 +386,58 @@ namespace SharpSbn
                        _minY >= minY && _maxY <= maxY;
             }
 
+            public void QueryNodes(byte minx, byte miny, byte maxx, byte maxy, List<SbnQueryOnlyNode> nodes)
+            {
+
+                if (!Intersects(minx, miny, maxx, maxy))
+                    return;
+
+                if (ContainedBy(minx, miny, maxx, maxy))
+                {
+                    AddAllNodes(nodes);
+                    return;
+                }
+
+                // Add this node
+                nodes.Add(this);
+
+                // Test if child nodes are to be added
+                if (Nid < _tree.FirstLeafNodeId)
+                {
+                    GetChild(0).QueryNodes(minx, miny, maxx, maxy, nodes);
+                    GetChild(1).QueryNodes(minx, miny, maxx, maxy, nodes);
+                }
+            }
+
+            private void AddAllNodes(List<SbnQueryOnlyNode> nodes)
+            {
+                nodes.Add(this);
+                if (Nid < _tree.FirstLeafNodeId)
+                {
+                    GetChild(0).AddAllNodes(nodes);
+                    GetChild(1).AddAllNodes(nodes);
+                }
+            }
+
+            int IComparable.CompareTo(object obj)
+            {
+                if (obj == null)
+                    throw new ArgumentNullException();
+                if (!(obj is SbnQueryOnlyNode))
+                    throw new ArgumentException("Object not a SbnQueryOnlyNode", "obj");
+
+                return ((IComparable<SbnQueryOnlyNode>) this).CompareTo((SbnQueryOnlyNode) obj);
+            }
+
+            int IComparable<SbnQueryOnlyNode>.CompareTo(SbnQueryOnlyNode other)
+            {
+                if (other == null)
+                    throw new ArgumentNullException("other");
+
+                if (Nid < other.Nid) return -1;
+                if (Nid > other.Nid) return 1;
+                return 0;
+            }
         }
 
         private class SbnBinIndex
