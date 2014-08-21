@@ -117,8 +117,8 @@ namespace SharpSbn
         /// <param name="reader">The reader to use</param>
         internal int Read(BinaryReader reader)
         {
-            var bid = reader.ReadInt32BE();
-            NumFeatures = reader.ReadInt32BE()/4;
+            var bid = BinaryIOExtensions.ReadInt32BE(reader);
+            NumFeatures = BinaryIOExtensions.ReadInt32BE(reader) / 4;
             ReadBuffer(reader);
             return bid;
         }
@@ -173,11 +173,11 @@ namespace SharpSbn
         {
             if (sbxWriter != null)
             {
-                sbxWriter.WriteBE((int)(sbnWriter.BaseStream.Position / 2));
-                sbxWriter.WriteBE(NumFeatures * 4);
+                BinaryIOExtensions.WriteBE(sbxWriter, (int)(sbnWriter.BaseStream.Position / 2));
+                BinaryIOExtensions.WriteBE(sbxWriter, NumFeatures * 4);
             }
-            sbnWriter.WriteBE(bid++);
-            sbnWriter.WriteBE(NumFeatures * 4);
+            BinaryIOExtensions.WriteBE(sbnWriter, bid++);
+            BinaryIOExtensions.WriteBE(sbnWriter, NumFeatures*4);
 
             WriteBuffer(sbnWriter);
             if (Next != null)

@@ -1,3 +1,4 @@
+#if UseGeoAPI
 using GeoAPI.DataStructures;
 using GeoAPI.Geometries;
 
@@ -5,7 +6,7 @@ namespace SharpSbn
 {
     internal static class GeometryMetricExtensions
     {
-        internal static void GetMetric(this IGeometry self, 
+        internal static void GetMetric(IGeometry self, 
                                        out Interval xrange, out Interval yrange, 
                                        out Interval zrange, out Interval mrange)
         {
@@ -93,3 +94,4 @@ namespace SharpSbn
         }
     }
 }
+#endif

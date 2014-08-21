@@ -4,7 +4,7 @@ namespace SharpSbn
 {
     internal static class NumPySlicing
     {
-        internal static IList<T> GetRange<T>(this IList<T> self, int start, int end, int step = 1)
+        internal static IList<T> GetRange<T>(IList<T> self, int start, int end, int step = 1)
         {
             List<T> res = null;
             if (step < 0)

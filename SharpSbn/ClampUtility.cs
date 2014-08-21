@@ -1,6 +1,11 @@
 using System;
-using GeoAPI.DataStructures;
-using GeoAPI.Geometries;
+#if UseGeoAPI
+using Interval = GeoAPI.DataStructures.Interval;
+using Envelope = GeoAPI.Geometries.Envelope;
+#else
+using Interval = SharpSbn.DataStructures.Interval;
+using Envelope = SharpSbn.DataStructures.Envelope;
+#endif
 
 namespace SharpSbn
 {
@@ -9,7 +14,7 @@ namespace SharpSbn
     /// </summary>
     internal static class ClampUtility
     {
-        internal static byte ScaleLower(this double value, Interval range)
+        internal static byte ScaleLower(double value, Interval range)
         {
             var min = ((value - range.Min) / range.Width * 255.0);
             // not sure why this rounding is needed, but it is
@@ -19,7 +24,7 @@ namespace SharpSbn
             return (byte)res;
         }
 
-        internal static byte ScaleUpper(this double value, Interval range)
+        internal static byte ScaleUpper(double value, Interval range)
         {
             var max = ((value - range.Min) / range.Width * 255.0);
             var modMax = (max % 1 + .005) % 1 + (int)max;

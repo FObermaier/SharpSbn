@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>SharpSbn</id>
+        <version>$version$</version>
+        <title>Shapefile Spatial Index (SBN) Library</title>
+        <authors>FObermaier</authors>
+        <owners>FObermaier</owners>
+        <licenseUrl>https://github.com/FObermaier/SbnSharp/blob/master/LICENSE.txt</licenseUrl>
+        <projectUrl>https://github.com/FObermaier/SbnSharp</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>A library to create, read, and write Shapefile SBN index files.
+The implementation is based on hasbeen by Marc Pfister (drwelby).</description>
+        <summary>A library to create, read, and write Shapefile SBN index files.</summary>
+        <releaseNotes>Initial release</releaseNotes>
+        <tags>SBN ShapeFile</tags>
+        <frameworkAssemblies>
+            <frameworkAssembly assemblyName="System" targetFramework="" />
+        </frameworkAssemblies>
+    </metadata>
+    <files>
+        <file src="Release\v2.0\SharpSbn.dll" target="lib\net20\SharpSbn.dll" />
+        <file src="Release\v2.0\SharpSbn.pdb" target="lib\net20\SharpSbn.pdb" />
+        <file src="Release\v3.5\SharpSbn.dll" target="lib\net35-client\SharpSbn.dll" />
+        <file src="Release\v3.5\SharpSbn.pdb" target="lib\net35-client\SharpSbn.pdb" />
+        <file src="Release\v4.0\SharpSbn.dll" target="lib\net40-client\SharpSbn.dll" />
+        <file src="Release\v4.0\SharpSbn.pdb" target="lib\net40-client\SharpSbn.pdb" />
+        <file src="Release\v4.5\SharpSbn.dll" target="lib\net45\SharpSbn.dll" />
+        <file src="Release\v4.5\SharpSbn.pdb" target="lib\net45\SharpSbn.pdb" />
+        <file src="Release\PCL.147\SharpSbn.PCL.dll" target="lib\portable-net403+sl5+wp71+win8\SharpSbn.PCL.dll" />
+        <file src="Release\PCL.147\SharpSbn.PCL.pdb" target="lib\portable-net403+sl5+wp71+win8\SharpSbn.PCL.pdb" />
+
+        <file src="SharpSbn\DataStructures\Envelope.cs" target="src\DataStructures\Envelope.cs" />
+        <file src="SharpSbn\DataStructures\Interval.cs" target="src\DataStructures\Interval.cs" />
+        <file src="SharpSbn\Properties\AssemblyInfo.cs" target="src\Properties\AssemblyInfo.cs" />
+        <file src="SharpSbn\BinaryIOExtensions.cs" target="src\BinaryIOExtensions.cs" />
+        <file src="SharpSbn\ClampUtility.cs" target="src\ClampUtility.cs" />
+        <file src="SharpSbn\FrameworkReplacements.cs" target="src\FrameworkReplacements.cs" />
+        <file src="SharpSbn\GeometryMetricExtensions.cs" target="src\GeometryMetricExtensions.cs" />
+        <file src="SharpSbn\NumPySlicing.cs" target="src\NumPySlicing.cs" />
+        <file src="SharpSbn\SbnBin.cs" target="src\SbnBin.cs" />
+        <file src="SharpSbn\SbnException.cs" target="src\SbnException.cs" />
+        <file src="SharpSbn\SbnFeature.cs" target="src\SbnFeature.cs" />
+        <file src="SharpSbn\SbnHeader.cs" target="src\SbnHeader.cs" />
+        <file src="SharpSbn\SbnNode.cs" target="src\SbnNode.cs" />
+        <file src="SharpSbn\SbnQueryOnlyTree.cs" target="src\SbnQueryOnlyTree.cs" />
+        <file src="SharpSbn\SbnTree.cs" target="src\SbnTree.cs" />
+        <file src="SharpSbn\SbnTreeRebuildRequiredEventArgs.cs" target="src\SbnTreeRebuildRequiredEventArgs.cs" />
+    </files>
+</package>

@@ -1,7 +1,11 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using GeoAPI.Geometries;
+#if UseGeoAPI
+using Envelope = GeoAPI.Geometries.Envelope;
+#else
+using Envelope = SharpSbn.DataStructures.Envelope;
+#endif
 
 namespace SharpSbn
 {
@@ -33,7 +37,7 @@ namespace SharpSbn
             MinY = sr.ReadByte();
             MaxX = sr.ReadByte();
             MaxY = sr.ReadByte();
-            _fid = sr.ReadUInt32BE();
+            _fid = BinaryIOExtensions.ReadUInt32BE(sr);
         }
 
         /// <summary>
@@ -42,6 +46,7 @@ namespace SharpSbn
         /// <param name="header">The header of the index</param>
         /// <param name="fid">The feature's id</param>
         /// <param name="extent">The feature's extent</param>
+        [CLSCompliant(false)]
         public SbnFeature(SbnHeader header, uint fid, Envelope extent)
             :this(header.Extent, fid, extent)
         {
@@ -53,6 +58,7 @@ namespace SharpSbn
         /// <param name="sfExtent">The extent of the index</param>
         /// <param name="fid">The feature's id</param>
         /// <param name="extent">The feature's extent</param>
+        [CLSCompliant(false)]
         public SbnFeature(Envelope sfExtent, uint fid, Envelope extent)
         {
             _fid = fid;
@@ -96,7 +102,8 @@ namespace SharpSbn
         /// <summary>
         /// Gets the id of this feature
         /// </summary>
-        public uint Fid { get { return _fid; }}
+        [CLSCompliant(false)]
+        public uint Fid { get { return _fid; } }
 
         /// <summary>
         /// Method to write the feature to an index
@@ -108,7 +115,7 @@ namespace SharpSbn
             writer.Write(MinY);
             writer.Write(MaxX);
             writer.Write(MaxY);
-            writer.WriteBE(_fid);
+            BinaryIOExtensions.WriteBE(writer, _fid);
         }
 
         public bool Equals(SbnFeature other)

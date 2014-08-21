@@ -1,5 +1,4 @@
 using System;
-using GeoAPI.Geometries;
 
 namespace SharpSbn
 {
@@ -13,7 +12,8 @@ namespace SharpSbn
         /// </summary>
         /// <param name="fid">The feature's id</param>
         /// <param name="geometry">The features geometry</param>
-        public SbnTreeRebuildRequiredEventArgs(uint fid, IGeometry geometry)
+        [CLSCompliant(false)]
+        public SbnTreeRebuildRequiredEventArgs(uint fid, object geometry)
         {
             Fid = fid;
             Geometry = geometry;
@@ -22,11 +22,12 @@ namespace SharpSbn
         /// <summary>
         /// The feature's id
         /// </summary>
+        [CLSCompliant(false)]
         public uint Fid { get; private set; }
 
         /// <summary>
         /// Gets a value indicating the geometry's 
         /// </summary>
-        public IGeometry Geometry { get; private set; }
+        public object Geometry { get; private set; }
     }
 }

@@ -2,8 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using GeoAPI.DataStructures;
-using GeoAPI.Geometries;
+#if UseGeoAPI
+using Interval = GeoAPI.DataStructures.Interval;
+using Envelope = GeoAPI.Geometries.Envelope;
+#else
+using Interval = SharpSbn.DataStructures.Interval;
+using Envelope = SharpSbn.DataStructures.Envelope;
+#endif
 
 namespace SharpSbn
 {
@@ -166,8 +171,8 @@ namespace SharpSbn
             Monitor.Enter(_indexLock);
             _sbxStream.Seek(100 + binIndex*8, SeekOrigin.Begin);
             var sbxReader = new BinaryReader(_sbxStream);
-            var sbnPosition = sbxReader.ReadUInt32BE()*2;
-            var sbnSize = 8 + sbxReader.ReadInt32BE()*2;
+            var sbnPosition = BinaryIOExtensions.ReadUInt32BE(sbxReader)*2;
+            var sbnSize = 8 + BinaryIOExtensions.ReadInt32BE(sbxReader) * 2;
             _sbnStream.Seek(sbnPosition, SeekOrigin.Begin);
             var res = new byte[sbnSize];
             _sbnStream.Read(res, 0, sbnSize);
@@ -456,16 +461,16 @@ namespace SharpSbn
 
             internal static SbnBinIndex Read(BinaryReader reader)
             {
-                if (reader.ReadInt32BE() != 1)
+                if (BinaryIOExtensions.ReadInt32BE(reader) != 1)
                     throw new SbnException("Sbn file corrupt");
 
-                var length = reader.ReadInt32BE();
+                var length = BinaryIOExtensions.ReadInt32BE(reader);
                 var maxNodeId = length / 4;
                 var nodeToBin = new SbnNodeToBinIndexEntry[maxNodeId + 1];
                 for (var i = 1; i <= maxNodeId; i++)
                 {
-                    var binIndex = reader.ReadInt32BE();
-                    var numFeatures = reader.ReadInt32BE();
+                    var binIndex = BinaryIOExtensions.ReadInt32BE(reader);
+                    var numFeatures = BinaryIOExtensions.ReadInt32BE(reader);
                     if (binIndex > 0)
                         nodeToBin[i] = new SbnNodeToBinIndexEntry { FirstBinIndex = binIndex, NumFeatures = numFeatures };
                 }

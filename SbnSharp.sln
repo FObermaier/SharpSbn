@@ -15,6 +15,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSbn.Test", "test\Sharp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSbn.PCL", "SharpSbn.PCL\SharpSbn.PCL.csproj", "{1A3D1636-8576-463D-BA97-673E739A0B3C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{BDE9A125-7B3D-42E1-B519-0637568A1423}"
+	ProjectSection(SolutionItems) = preProject
+		SharpSbn.targets = SharpSbn.targets
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +38,7 @@ Global
 		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1A3D1636-8576-463D-BA97-673E739A0B3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1A3D1636-8576-463D-BA97-673E739A0B3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A3D1636-8576-463D-BA97-673E739A0B3C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

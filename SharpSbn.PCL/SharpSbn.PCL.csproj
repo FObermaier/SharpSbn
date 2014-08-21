@@ -39,6 +39,18 @@
     <Compile Include="..\SharpSbn\BinaryIOExtensions.cs">
       <Link>BinaryIOExtensions.cs</Link>
     </Compile>
+    <Compile Include="..\SharpSbn\ClampUtility.cs">
+      <Link>ClampUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\DataStructures\Envelope.cs">
+      <Link>DataStructures\Envelope.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\DataStructures\Interval.cs">
+      <Link>DataStructures\Interval.cs</Link>
+    </Compile>
+    <Compile Include="..\SharpSbn\FrameworkReplacements.cs">
+      <Link>FrameworkReplacements.cs</Link>
+    </Compile>
     <Compile Include="..\SharpSbn\GeometryMetricExtensions.cs">
       <Link>GeometryMetricExtensions.cs</Link>
     </Compile>

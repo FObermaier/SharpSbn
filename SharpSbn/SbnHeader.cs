@@ -1,8 +1,12 @@
 using System.IO;
 using System.Text;
-using GeoAPI.DataStructures;
-using GeoAPI.Geometries;
-
+#if UseGeoAPI
+using Interval = GeoAPI.DataStructures.Interval;
+using Envelope = GeoAPI.Geometries.Envelope;
+#else
+using Interval = SharpSbn.DataStructures.Interval;
+using Envelope = SharpSbn.DataStructures.Envelope;
+#endif
 namespace SharpSbn
 {
     public class SbnHeader
@@ -102,22 +106,22 @@ namespace SharpSbn
         /// <param name="reader">The reader to use</param>
         public void Read(BinaryReader reader)
         {
-            var fileCode = reader.ReadInt32BE();
-            var fileCodeIndex = reader.ReadInt32BE();
+            var fileCode = BinaryIOExtensions.ReadInt32BE(reader);
+            var fileCodeIndex = BinaryIOExtensions.ReadInt32BE(reader);
             if (fileCode != FileCode || fileCodeIndex != FileCodeIndex)
                 throw new SbnException("Not a Shapefile index file");
 
             reader.BaseStream.Seek(16, SeekOrigin.Current);
 
-            FileLength = reader.ReadInt32BE() * 2;
-            NumRecords = reader.ReadInt32BE();
+            FileLength = BinaryIOExtensions.ReadInt32BE(reader) * 2;
+            NumRecords = BinaryIOExtensions.ReadInt32BE(reader);
 
-            var minX = reader.ReadDoubleBE();
-            var minY = reader.ReadDoubleBE();
-            XRange = Interval.Create(minX, reader.ReadDoubleBE());
-            YRange = Interval.Create(minY, reader.ReadDoubleBE());
-            ZRange = Interval.Create(reader.ReadDoubleBE(), reader.ReadDoubleBE());
-            MRange = Interval.Create(reader.ReadDoubleBE(), reader.ReadDoubleBE());
+            var minX = BinaryIOExtensions.ReadDoubleBE(reader);
+            var minY = BinaryIOExtensions.ReadDoubleBE(reader);
+            XRange = Interval.Create(minX, BinaryIOExtensions.ReadDoubleBE(reader));
+            YRange = Interval.Create(minY, BinaryIOExtensions.ReadDoubleBE(reader));
+            ZRange = Interval.Create(BinaryIOExtensions.ReadDoubleBE(reader), BinaryIOExtensions.ReadDoubleBE(reader));
+            MRange = Interval.Create(BinaryIOExtensions.ReadDoubleBE(reader), BinaryIOExtensions.ReadDoubleBE(reader));
 
             reader.BaseStream.Seek(4, SeekOrigin.Current);
         }
@@ -129,26 +133,26 @@ namespace SharpSbn
         /// <param name="fileLength"></param>
         internal void Write(BinaryWriter writer, int? fileLength = null)
         {
-            writer.WriteBE(FileCode);
-            writer.WriteBE(FileCodeIndex);
+            BinaryIOExtensions.WriteBE(writer, FileCode);
+            BinaryIOExtensions.WriteBE(writer, FileCodeIndex);
 
             writer.Write(new byte[16]);
 
-            writer.WriteBE((fileLength ?? FileLength) / 2);
-            writer.WriteBE(NumRecords);
+            BinaryIOExtensions.WriteBE(writer, (fileLength ?? FileLength) / 2);
+            BinaryIOExtensions.WriteBE(writer, NumRecords);
 
-            writer.WriteBE(XRange.Min);
-            writer.WriteBE(YRange.Min);
-            writer.WriteBE(XRange.Max);
-            writer.WriteBE(YRange.Max);
+            BinaryIOExtensions.WriteBE(writer, XRange.Min);
+            BinaryIOExtensions.WriteBE(writer, YRange.Min);
+            BinaryIOExtensions.WriteBE(writer, XRange.Max);
+            BinaryIOExtensions.WriteBE(writer, YRange.Max);
 
-            writer.WriteBE(ZRange);
-            writer.WriteBE(MRange);
+            BinaryIOExtensions.WriteBE(writer, ZRange);
+            BinaryIOExtensions.WriteBE(writer, MRange);
 
             writer.Write(0);
         }
 
-        internal void AddFeature(uint id, IGeometry geometry)
+        internal void AddFeature(uint id, Envelope geometry, Interval zRange, Interval mRange)
         {
             NumRecords++;
         }

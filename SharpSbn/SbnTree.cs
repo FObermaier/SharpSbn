@@ -1,12 +1,28 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+#if !(NET40 || NET45)
+using FrameworkReplacemets.Linq;
+#else
 using System.Linq;
+#endif
+#if UseGeoAPI
+#if !NET40
+using Tuple = FrameworkReplacemets.Tuple<uint, GeoAPI.Geometries.IGeometry>;
+#else
+using Tuple = System.Tuple<uint, GeoAPI.Geometries.IGeometry>;
+#endif
+#endif
 using System.Threading;
-using GeoAPI.DataStructures;
-using GeoAPI.Geometries;
+#if UseGeoAPI
+using Interval = GeoAPI.DataStructures.Interval;
+using Envelope = GeoAPI.Geometries.Envelope;
+#else
+using Interval = SharpSbn.DataStructures.Interval;
+using Envelope = SharpSbn.DataStructures.Envelope;
+#endif
+using SbnEnumerable = FrameworkReplacemets.Linq.Enumerable;
 
 namespace SharpSbn
 {
@@ -15,6 +31,22 @@ namespace SharpSbn
     /// </summary>
     public class SbnTree
     {
+        /// <summary>
+        /// Property to test if GeoAPI is used or not!
+        /// </summary>
+        public static bool HasGeoAPISupport
+        {
+            get
+            {
+                return
+#if UseGeoAPI
+                    true;
+#else
+                    false;
+#endif
+            }
+        }
+
 #if !PCL
         public static void SbnToText(string sbnTree, TextWriter writer)
         {
@@ -28,10 +60,10 @@ namespace SharpSbn
                 // Bin header
                 writer.WriteLine("[BinHeader]");
 
-                if (br.ReadUInt32BE() != 1)
+                if (BinaryIOExtensions.ReadUInt32BE(br) != 1)
                     throw new SbnException("Invalid format, expecting 1");
 
-                var maxNodeId = br.ReadInt32BE() / 4;
+                var maxNodeId = BinaryIOExtensions.ReadInt32BE(br) / 4;
                 writer.WriteLine("#1, {0} => MaxNodeId = {1}", maxNodeId * 4, maxNodeId);
 
                 var ms = new MemoryStream(br.ReadBytes(maxNodeId * 8));
@@ -41,7 +73,8 @@ namespace SharpSbn
                     var index = 2;
                     while (msReader.BaseStream.Position < msReader.BaseStream.Length)
                     {
-                        writer.WriteLine("#{2}, Index {0}, NumFeatures={1}", msReader.ReadInt32BE(), msReader.ReadInt32BE(), index++);
+                        writer.WriteLine("#{2}, Index {0}, NumFeatures={1}",
+                            BinaryIOExtensions.ReadInt32BE(msReader), BinaryIOExtensions.ReadInt32BE(msReader), index++);
                     }
                 }
 
@@ -100,23 +133,18 @@ namespace SharpSbn
 
         private readonly SbnHeader _header = new SbnHeader();
         internal SbnNode[] Nodes;
-        private readonly HashSet<uint> _featureIds;
+#if NET40 || NET45
+        private readonly HashSet<uint> _featureIds = new HashSet<uint>();
+#else
+        private readonly Dictionary<uint, uint> _featureIds = new Dictionary<uint, uint>();
+#endif
         private readonly object _syncRoot = new object();
-
-        /// <summary>
-        /// Private preparation of the tree
-        /// </summary>
-        private SbnTree()
-        {
-            _featureIds = new HashSet<uint>();
-        }
 
         /// <summary>
         /// Creates the tree reading data from the <paramref name="reader"/>
         /// </summary>
         /// <param name="reader">The reader to use</param>
         private SbnTree(BinaryReader reader)
-            : this()
         {
             Monitor.Enter(_syncRoot);
 
@@ -125,18 +153,18 @@ namespace SharpSbn
 
             BuildTree(_header.NumRecords);
 
-            if (reader.ReadUInt32BE() != 1)
+            if (BinaryIOExtensions.ReadUInt32BE(reader) != 1)
                 throw new SbnException("Invalid format, expecting 1");
 
-            var maxNodeId = reader.ReadInt32BE() / 4;
+            var maxNodeId = BinaryIOExtensions.ReadInt32BE(reader) / 4;
             var ms = new MemoryStream(reader.ReadBytes(maxNodeId * 8));
             using (var msReader = new BinaryReader(ms))
             {
                 var indexNodeId = 1;
                 while (msReader.BaseStream.Position < msReader.BaseStream.Length)
                 {
-                    var nid = msReader.ReadInt32BE();
-                    var featureCount = msReader.ReadInt32BE();
+                    var nid = BinaryIOExtensions.ReadInt32BE(msReader);
+                    var featureCount = BinaryIOExtensions.ReadInt32BE(msReader);
 
                     if (nid > 1)
                     {
@@ -165,7 +193,6 @@ namespace SharpSbn
         }
 
         public SbnTree(SbnHeader header)
-            :this()
         {
             _header = header;
             BuildTree(_header.NumRecords);
@@ -192,12 +219,16 @@ namespace SharpSbn
         /// </summary>
         private void GatherFids()
         {
-            foreach (var sbnNode in Nodes.Skip(1))
+            foreach (var sbnNode in Enumerable.Skip(Nodes, 1))
             {
                 if (sbnNode == null) continue;
 
                 foreach (var feature in sbnNode)
+#if NET40 || NET45
                     _featureIds.Add(feature.Fid);
+#else
+                    _featureIds.Add(feature.Fid, 0);
+#endif
             }
         }
 
@@ -245,16 +276,38 @@ namespace SharpSbn
                 handler(this, e);
         }
 
-
+#if UseGeoAPI
         /// <summary>
         /// Method to insert a new feature to the tree
         /// </summary>
         /// <param name="fid">The feature's id</param>
         /// <param name="geometry">The feature's geometry</param>
+        [CLSCompliant(false)]
         public void Insert(uint fid, IGeometry geometry)
         {
+            Insert(fid, geometry.EnvelopeInternal)
+
+        }
+
+        /// <summary>
+        /// Method to create an <see cref="SbnFeature"/> from an id and a geometry
+        /// </summary>
+        /// <param name="fid">The feature's id</param>
+        /// <param name="geometry">The geometry</param>
+        /// <returns>A sbnfeature</returns>
+        private SbnFeature ToSbnFeature(uint fid, IGeometry geometry)
+        {
+            return new SbnFeature(_header.Extent, fid, geometry.EnvelopeInternal);
+        }
+
+#endif
+
+        [CLSCompliant(false)]
+        public void Insert(uint fid, Envelope envelope)
+        {
+
             // Convert to an sbnfeature
-            var sbnFeature = ToSbnFeature(fid, geometry.EnvelopeInternal);
+            var sbnFeature = ToSbnFeature(fid, envelope);
 
             // lock the tree
             Monitor.Enter(_syncRoot);
@@ -265,7 +318,7 @@ namespace SharpSbn
                 // Does the feature fit into the current tree
                 if (!Root.Contains(sbnFeature.MinX, sbnFeature.MinY, sbnFeature.MaxX, sbnFeature.MaxY) )
                 {
-                    OnRebuildRequired(new SbnTreeRebuildRequiredEventArgs(fid, geometry));
+                    OnRebuildRequired(new SbnTreeRebuildRequiredEventArgs(fid, envelope));
                     Monitor.Exit(_syncRoot);
                     return;
                 }
@@ -316,6 +369,7 @@ namespace SharpSbn
         /// </summary>
         /// <param name="fid">The id of the feature</param>
         /// <param name="envelope">The envelope in which to search for the feature</param>
+        [CLSCompliant(false)]
         public void Remove(uint fid, Envelope envelope = null)
         {
             Monitor.Enter(_syncRoot);
@@ -335,7 +389,11 @@ namespace SharpSbn
         {
             // Insert a feature into the tree
             Root.Insert(feature);
+#if (NET40 || NET45)
             _featureIds.Add(feature.Fid);
+#else
+            _featureIds.Add(feature.Fid, 0);
+#endif
         }
 
         /// <summary>
@@ -471,11 +529,11 @@ namespace SharpSbn
             // sbn and sbx records
             // first create bin descriptors record
             var recLen = (numBinHeaderRecords) * 4;
-            sbnsw.WriteBE(1);
-            sbnsw.WriteBE(recLen);
+            BinaryIOExtensions.WriteBE(sbnsw, 1);
+            BinaryIOExtensions.WriteBE(sbnsw, recLen);
 
-            sbxsw.WriteBE(50);
-            sbxsw.WriteBE(recLen);
+            BinaryIOExtensions.WriteBE(sbxsw, 50);
+            BinaryIOExtensions.WriteBE(sbxsw, recLen);
 
             WriteBinHeader(sbnsw, lastBinIndex);
 
@@ -494,14 +552,14 @@ namespace SharpSbn
             {
                 if (Nodes[i].FeatureCount > 0)
                 {
-                    sbnsw.WriteBE(binIndex);
-                    sbnsw.WriteBE(Nodes[i].FeatureCount);
+                    BinaryIOExtensions.WriteBE(sbnsw, binIndex);
+                    BinaryIOExtensions.WriteBE(sbnsw, Nodes[i].FeatureCount);
                     binIndex += (int) Math.Ceiling(Nodes[i].FeatureCount/100d);
                 }
                 else
                 {
-                    sbnsw.WriteBE(-1);
-                    sbnsw.WriteBE(0);
+                    BinaryIOExtensions.WriteBE(sbnsw, -1);
+                    BinaryIOExtensions.WriteBE(sbnsw, 0);
                 }
             }
         }
@@ -640,7 +698,7 @@ namespace SharpSbn
             var start = (int)Math.Pow(2, level - 1);
             var end = 2 * start - 1;
             var featureCount = 0;
-            foreach (var n in Nodes.GetRange(start, end - start + 1))
+            foreach (var n in SbnEnumerable.GetRange(Nodes, start, end - start + 1))
                 featureCount += n.FeatureCount;
             return featureCount;
         }
@@ -671,17 +729,6 @@ namespace SharpSbn
 #else
             //We are not verbose so we don't do anything
 #endif
-        }
-
-        /// <summary>
-        /// Method to create an <see cref="SbnFeature"/> from an id and a geometry
-        /// </summary>
-        /// <param name="fid">The feature's id</param>
-        /// <param name="geometry">The geometry</param>
-        /// <returns>A sbnfeature</returns>
-        private SbnFeature ToSbnFeature(uint fid, IGeometry geometry)
-        {
-            return new SbnFeature(_header.Extent, fid, geometry.EnvelopeInternal);
         }
 
         /// <summary>
@@ -732,15 +779,16 @@ namespace SharpSbn
 
             var start = (int)Math.Pow(2, level - 1);
             var end = 2 * start - 1;
-            return Nodes.GetRange(start, end, 1);
+            return NumPySlicing.GetRange(Nodes, start, end, 1);
         }
 
+#if UseGeoAPI
         /// <summary>
         /// Method to create an <see cref="SbnTree"/> from a collection of (id, geometry) tuples
         /// </summary>
         /// <param name="boxedFeatures">The (id, geometry) tuples</param>
         /// <returns></returns>
-        public static SbnTree Create(ICollection<Tuple<uint, IGeometry>> boxedFeatures)
+        public static SbnTree Create(ICollection<Tuple> boxedFeatures)
         {
             Interval x, y, z, m;
             GetIntervals(boxedFeatures, out x, out y, out z, out m);
@@ -762,7 +810,7 @@ namespace SharpSbn
         /// <param name="yrange">The y-extent</param>
         /// <param name="zrange">The z-extent</param>
         /// <param name="mrange">The m-extent</param>
-        private static void GetIntervals(IEnumerable<Tuple<uint, IGeometry>> geoms, out Interval xrange, out Interval yrange,
+        private static void GetIntervals(IEnumerable<Tuple> geoms, out Interval xrange, out Interval yrange,
             out Interval zrange, out Interval mrange)
         {
             xrange = Interval.Create();
@@ -773,13 +821,14 @@ namespace SharpSbn
             foreach (var tuple in geoms)
             {
                 Interval x2Range, y2Range, z2Range, m2Range;
-                tuple.Item2.GetMetric(out x2Range, out y2Range, out z2Range, out m2Range);
+                GeometryMetricExtensions.GetMetric(tuple.Item2, out x2Range, out y2Range, out z2Range, out m2Range);
                 xrange = xrange.ExpandedByInterval(x2Range);
                 yrange = yrange.ExpandedByInterval(y2Range);
                 zrange = zrange.ExpandedByInterval(z2Range);
                 mrange = mrange.ExpandedByInterval(m2Range);
             }
         }
+#endif
 
         /// <summary>
         /// Method to compact this <see cref="SbnTree"/>.
@@ -796,17 +845,17 @@ namespace SharpSbn
             var end = start / 8;
             if (end < 1) end = 1;
 
-            foreach (var node in Nodes.GetRange(start, end, -1))
+            foreach (var node in NumPySlicing.GetRange(Nodes, start, end, -1))
             {
                 var id = node.Nid;
-                var children = Nodes.GetRange(id*2, 2);
+                var children = SbnEnumerable.GetRange(Nodes, id * 2, 2);
                 foreach (var child in children)
                 {
                     // There are no items to pull up
                     if (child.FeatureCount == 0) continue;
 
                     var cid = child.Nid;
-                    var grandchildren = Nodes.GetRange(cid*2, 2);
+                    var grandchildren = SbnEnumerable.GetRange(Nodes, cid * 2, 2);
                     var gccount = 0;
                     foreach (var gcnode in grandchildren)
                         gccount += gcnode.FeatureCount;
