@@ -18,25 +18,56 @@
     <Delete Files="$(SolutionDir)*.*" ContinueOnError="true"/> 
   </Target>
 
-  <Target Name="BuildSbn" DependsOnTargets="CleanSbn">
+  <Target Name="BuildSbn" DependsOnTargets="CleanSbn;Build20;Build35;Build40;Build403;Build45;BuildPCL">
+  </Target>
+
+  <Target Name="Build20">
+    <PropertyGroup>
+    	<dc>$(DefineConstants);NET20</dc>
+    </PropertyGroup>
     <MSBuild Projects="$(SolutionFile)" Targets="SharpSbn"
-             Properties="Configuration=Release;TargetFrameworkVersion=v2.0;DefineConstants=NET20;BaseIntermediateOutputPath=$(SolutionDir)obj\v2.0\;OutputPath=$(SolutionDir)Release\v2.0;"
+             Properties="Configuration=Release;TargetFrameworkVersion=v2.0;DefineConstants=$(dc);BaseIntermediateOutputPath=$(SolutionDir)obj\v2.0\;OutputPath=$(SolutionDir)Release\v2.0;"
              ContinueOnError="true"
              RunEachTargetSeparately="True"/>
+  </Target>
+  <Target Name="Build35">
+    <PropertyGroup>
+    	<dc>NET20;NET35</dc>
+    </PropertyGroup>
     <MSBuild Projects="$(SolutionFile)" Targets="SharpSbn"
-             Properties="Configuration=Release;TargetFrameworkVersion=v3.5;TargetFrameworkProfile=Client;DefineConstants=NET35;BaseIntermediateOutputPath=$(SolutionDir)obj\v3.5\;OutputPath=$(SolutionDir)Release\v3.5;"
+             Properties="Configuration=Release;TargetFrameworkVersion=v3.5;TargetFrameworkProfile=Client;DefineConstants=$(dc);BaseIntermediateOutputPath=$(SolutionDir)obj\v3.5\;OutputPath=$(SolutionDir)Release\v3.5;"
              ContinueOnError="true"
              RunEachTargetSeparately="True"/>
+  </Target>
+  <Target Name="Build40">
+    <PropertyGroup>
+    	<dc>NET20;NET35;NET40</dc>
+    </PropertyGroup>
     <MSBuild Projects="$(SolutionFile)" Targets="SharpSbn" 
-             Properties="Configuration=Release;TargetFrameworkVersion=v4.0;TargetFrameworkProfile=Client;DefineConstants=NET40;BaseIntermediateOutputPath=$(SolutionDir)obj\v4.0\;OutputPath=$(SolutionDir)Release\v4.0;"
+             Properties="Configuration=Release;TargetFrameworkVersion=v4.0;TargetFrameworkProfile=Client;DefineConstants=$(dc);BaseIntermediateOutputPath=$(SolutionDir)obj\v4.0\;OutputPath=$(SolutionDir)Release\v4.0;"
              ContinueOnError="true"
              RunEachTargetSeparately="True"/>
+  </Target>
+  <Target Name="Build403">
+    <PropertyGroup>
+    	<dc>NET20;NET35;NET40</dc>
+    </PropertyGroup>
     <MSBuild Projects="$(SolutionFile)" Targets="SharpSbn" 
-             Properties="Configuration=Release;TargetFrameworkVersion=v4.0.3;TargetFrameworkProfile=Client;DefineConstants=NET40;BaseIntermediateOutputPath=$(SolutionDir)obj\v4.03\;OutputPath=$(SolutionDir)Release\v4.03;"
+             Properties="Configuration=Release;TargetFrameworkVersion=v4.0.3;TargetFrameworkProfile=Client;DefineConstants=$(dc);BaseIntermediateOutputPath=$(SolutionDir)obj\v4.03\;OutputPath=$(SolutionDir)Release\v4.03;"
              ContinueOnError="true"
              RunEachTargetSeparately="True"/>
+  </Target>
+  <Target Name="Build45">
+    <PropertyGroup>
+    	<dc>NET20;NET35;NET45</dc>
+    </PropertyGroup>
     <MSBuild Projects="$(SolutionFile)" Targets="SharpSbn" 
-             Properties="Configuration=Release;TargetFrameworkVersion=v4.5;DefineConstants=NET45;BaseIntermediateOutputPath=$(SolutionDir)obj\v4.5\;OutputPath=$(SolutionDir)Release\v4.5" />
+             Properties="Configuration=Release;TargetFrameworkVersion=v4.5;DefineConstants=$(dc);BaseIntermediateOutputPath=$(SolutionDir)obj\v4.5\;OutputPath=$(SolutionDir)Release\v4.5" />
+  </Target>
+  <Target Name="BuildPCL">
+    <PropertyGroup>
+    	<dc>NET20;NET35;NET45;PCL</dc>
+    </PropertyGroup>
     <MSBuild Projects="$(SolutionFile)" Targets="SharpSbn_PCL" 
              Properties="Configuration=Release;BaseIntermediateOutputPath=$(SolutionDir)obj\PCL.147\;OutputPath=$(SolutionDir)Release\PCL.147"
              RunEachTargetSeparately="True" />

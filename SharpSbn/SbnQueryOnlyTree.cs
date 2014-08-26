@@ -15,7 +15,7 @@ namespace SharpSbn
     /// <summary>
     /// A readonly implementation of an sbn index tree
     /// </summary>
-    public class SbnQueryOnlyTree
+    public class SbnQueryOnlyTree : IDisposable
     {
         private readonly Stream _sbnStream;
         private readonly Stream _sbxStream;
@@ -513,5 +513,20 @@ namespace SharpSbn
             }
         }
 
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (_sbnStream != null) _sbnStream.Dispose();
+                if (_sbxStream != null) _sbxStream.Dispose();
+            }
+
+        }
     }
 }

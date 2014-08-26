@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if !UseGeoAPI
+using System;
 using System.Globalization;
 using System.Text;
 
@@ -29,54 +30,54 @@ namespace SharpSbn.DataStructures
     /// </summary>
     public class Envelope //: IEquatable<Envelope>, IComparable<Envelope>//, IIntersectable<Envelope>, IExpandable<Envelope>
     {
-        /// <summary>
-        /// Test the point q to see whether it intersects the Envelope
-        /// defined by p1-p2.
-        /// </summary>
-        /// <param name="p1">One extremal point of the envelope.</param>
-        /// <param name="p2">Another extremal point of the envelope.</param>
-        /// <param name="q">Point to test for intersection.</param>
-        /// <returns><c>true</c> if q intersects the envelope p1-p2.</returns>
-        public static bool Intersects(Coordinate p1, Coordinate p2, Coordinate q)
-        {
-            return ((q.X >= (p1.X < p2.X ? p1.X : p2.X)) && (q.X <= (p1.X > p2.X ? p1.X : p2.X))) &&
-                   ((q.Y >= (p1.Y < p2.Y ? p1.Y : p2.Y)) && (q.Y <= (p1.Y > p2.Y ? p1.Y : p2.Y)));
-        }
+        ///// <summary>
+        ///// Test the point q to see whether it intersects the Envelope
+        ///// defined by p1-p2.
+        ///// </summary>
+        ///// <param name="p1">One extremal point of the envelope.</param>
+        ///// <param name="p2">Another extremal point of the envelope.</param>
+        ///// <param name="q">Point to test for intersection.</param>
+        ///// <returns><c>true</c> if q intersects the envelope p1-p2.</returns>
+        //public static bool Intersects(Coordinate p1, Coordinate p2, Coordinate q)
+        //{
+        //    return ((q.X >= (p1.X < p2.X ? p1.X : p2.X)) && (q.X <= (p1.X > p2.X ? p1.X : p2.X))) &&
+        //           ((q.Y >= (p1.Y < p2.Y ? p1.Y : p2.Y)) && (q.Y <= (p1.Y > p2.Y ? p1.Y : p2.Y)));
+        //}
 
-        /// <summary>
-        /// Tests whether the envelope defined by p1-p2
-        /// and the envelope defined by q1-q2
-        /// intersect.
-        /// </summary>
-        /// <param name="p1">One extremal point of the envelope Point.</param>
-        /// <param name="p2">Another extremal point of the envelope Point.</param>
-        /// <param name="q1">One extremal point of the envelope Q.</param>
-        /// <param name="q2">Another extremal point of the envelope Q.</param>
-        /// <returns><c>true</c> if Q intersects Point</returns>
-        public static bool Intersects(Coordinate p1, Coordinate p2, Coordinate q1, Coordinate q2)
-        {
-            double minp = Math.Min(p1.X, p2.X);
-            double maxq = Math.Max(q1.X, q2.X);
-            if (minp > maxq)
-                return false;
+        ///// <summary>
+        ///// Tests whether the envelope defined by p1-p2
+        ///// and the envelope defined by q1-q2
+        ///// intersect.
+        ///// </summary>
+        ///// <param name="p1">One extremal point of the envelope Point.</param>
+        ///// <param name="p2">Another extremal point of the envelope Point.</param>
+        ///// <param name="q1">One extremal point of the envelope Q.</param>
+        ///// <param name="q2">Another extremal point of the envelope Q.</param>
+        ///// <returns><c>true</c> if Q intersects Point</returns>
+        //public static bool Intersects(Coordinate p1, Coordinate p2, Coordinate q1, Coordinate q2)
+        //{
+        //    double minp = Math.Min(p1.X, p2.X);
+        //    double maxq = Math.Max(q1.X, q2.X);
+        //    if (minp > maxq)
+        //        return false;
 
-            double minq = Math.Min(q1.X, q2.X);
-            double maxp = Math.Max(p1.X, p2.X);
-            if (maxp < minq)
-                return false;
+        //    double minq = Math.Min(q1.X, q2.X);
+        //    double maxp = Math.Max(p1.X, p2.X);
+        //    if (maxp < minq)
+        //        return false;
 
-            minp = Math.Min(p1.Y, p2.Y);
-            maxq = Math.Max(q1.Y, q2.Y);
-            if (minp > maxq)
-                return false;
+        //    minp = Math.Min(p1.Y, p2.Y);
+        //    maxq = Math.Max(q1.Y, q2.Y);
+        //    if (minp > maxq)
+        //        return false;
 
-            minq = Math.Min(q1.Y, q2.Y);
-            maxp = Math.Max(p1.Y, p2.Y);
-            if (maxp < minq)
-                return false;
+        //    minq = Math.Min(q1.Y, q2.Y);
+        //    maxp = Math.Max(p1.Y, p2.Y);
+        //    if (maxp < minq)
+        //        return false;
 
-            return true;
-        }
+        //    return true;
+        //}
 
         /// <summary>
         /// The minimum x-coordinate
@@ -323,171 +324,171 @@ namespace SharpSbn.DataStructures
             }
         }
 
-        /// <summary>
-        /// Expands this envelope by a given distance in all directions.
-        /// Both positive and negative distances are supported.
-        /// </summary>
-        /// <param name="distance">The distance to expand the envelope.</param>
-        public void ExpandBy(double distance)
-        {
-            ExpandBy(distance, distance);
-        }
+        ///// <summary>
+        ///// Expands this envelope by a given distance in all directions.
+        ///// Both positive and negative distances are supported.
+        ///// </summary>
+        ///// <param name="distance">The distance to expand the envelope.</param>
+        //public void ExpandBy(double distance)
+        //{
+        //    ExpandBy(distance, distance);
+        //}
 
-        /// <summary>
-        /// Expands this envelope by a given distance in all directions.
-        /// Both positive and negative distances are supported.
-        /// </summary>
-        /// <param name="deltaX">The distance to expand the envelope along the the X axis.</param>
-        /// <param name="deltaY">The distance to expand the envelope along the the Y axis.</param>
-        public void ExpandBy(double deltaX, double deltaY)
-        {
-            if (IsNull)
-                return;
+        ///// <summary>
+        ///// Expands this envelope by a given distance in all directions.
+        ///// Both positive and negative distances are supported.
+        ///// </summary>
+        ///// <param name="deltaX">The distance to expand the envelope along the the X axis.</param>
+        ///// <param name="deltaY">The distance to expand the envelope along the the Y axis.</param>
+        //public void ExpandBy(double deltaX, double deltaY)
+        //{
+        //    if (IsNull)
+        //        return;
 
-            _minx -= deltaX;
-            _maxx += deltaX;
-            _miny -= deltaY;
-            _maxy += deltaY;
+        //    _minx -= deltaX;
+        //    _maxx += deltaX;
+        //    _miny -= deltaY;
+        //    _maxy += deltaY;
 
-            // check for envelope disappearing
-            if (_minx > _maxx || _miny > _maxy)
-                SetToNull();
-        }
+        //    // check for envelope disappearing
+        //    if (_minx > _maxx || _miny > _maxy)
+        //        SetToNull();
+        //}
 
-        /// <summary>
-        /// Gets the minimum extent of this envelope across both dimensions.
-        /// </summary>
-        /// <returns></returns>
-        public double MinExtent
-        {
-            get
-            {
-                if (IsNull) return 0.0;
-                double w = Width;
-                double h = Height;
-                if (w < h) return w;
-                return h;
-            }
-        }
+        ///// <summary>
+        ///// Gets the minimum extent of this envelope across both dimensions.
+        ///// </summary>
+        ///// <returns></returns>
+        //public double MinExtent
+        //{
+        //    get
+        //    {
+        //        if (IsNull) return 0.0;
+        //        double w = Width;
+        //        double h = Height;
+        //        if (w < h) return w;
+        //        return h;
+        //    }
+        //}
 
-        /// <summary>
-        /// Gets the maximum extent of this envelope across both dimensions.
-        /// </summary>
-        /// <returns></returns>
-        public double MaxExtent
-        {
-            get
-            {
-                if (IsNull) return 0.0;
-                double w = Width;
-                double h = Height;
-                if (w > h) return w;
-                return h;
-            }
-        }
+        ///// <summary>
+        ///// Gets the maximum extent of this envelope across both dimensions.
+        ///// </summary>
+        ///// <returns></returns>
+        //public double MaxExtent
+        //{
+        //    get
+        //    {
+        //        if (IsNull) return 0.0;
+        //        double w = Width;
+        //        double h = Height;
+        //        if (w > h) return w;
+        //        return h;
+        //    }
+        //}
 
-        /// <summary>
-        /// Enlarges this <code>Envelope</code> so that it contains
-        /// the given <see cref="Coordinate"/>.
-        /// Has no effect if the point is already on or within the envelope.
-        /// </summary>
-        /// <param name="p">The Coordinate.</param>
-        public void ExpandToInclude(Coordinate p)
-        {
-            ExpandToInclude(p.X, p.Y);
-        }
+        ///// <summary>
+        ///// Enlarges this <code>Envelope</code> so that it contains
+        ///// the given <see cref="Coordinate"/>.
+        ///// Has no effect if the point is already on or within the envelope.
+        ///// </summary>
+        ///// <param name="p">The Coordinate.</param>
+        //public void ExpandToInclude(Coordinate p)
+        //{
+        //    ExpandToInclude(p.X, p.Y);
+        //}
 
-        /// <summary>
-        /// Enlarges this <c>Envelope</c> so that it contains
-        /// the given <see cref="Coordinate"/>.
-        /// </summary>
-        /// <remarks>Has no effect if the point is already on or within the envelope.</remarks>
-        /// <param name="x">The value to lower the minimum x to or to raise the maximum x to.</param>
-        /// <param name="y">The value to lower the minimum y to or to raise the maximum y to.</param>
-        public void ExpandToInclude(double x, double y)
-        {
-            if (IsNull)
-            {
-                _minx = x;
-                _maxx = x;
-                _miny = y;
-                _maxy = y;
-            }
-            else
-            {
-                if (x < _minx)
-                    _minx = x;
-                if (x > _maxx)
-                    _maxx = x;
-                if (y < _miny)
-                    _miny = y;
-                if (y > _maxy)
-                    _maxy = y;
-            }
-        }
+        ///// <summary>
+        ///// Enlarges this <c>Envelope</c> so that it contains
+        ///// the given <see cref="Coordinate"/>.
+        ///// </summary>
+        ///// <remarks>Has no effect if the point is already on or within the envelope.</remarks>
+        ///// <param name="x">The value to lower the minimum x to or to raise the maximum x to.</param>
+        ///// <param name="y">The value to lower the minimum y to or to raise the maximum y to.</param>
+        //public void ExpandToInclude(double x, double y)
+        //{
+        //    if (IsNull)
+        //    {
+        //        _minx = x;
+        //        _maxx = x;
+        //        _miny = y;
+        //        _maxy = y;
+        //    }
+        //    else
+        //    {
+        //        if (x < _minx)
+        //            _minx = x;
+        //        if (x > _maxx)
+        //            _maxx = x;
+        //        if (y < _miny)
+        //            _miny = y;
+        //        if (y > _maxy)
+        //            _maxy = y;
+        //    }
+        //}
 
-        /// <summary>
-        /// Enlarges this <c>Envelope</c> so that it contains
-        /// the <c>other</c> Envelope.
-        /// Has no effect if <c>other</c> is wholly on or
-        /// within the envelope.
-        /// </summary>
-        /// <param name="other">the <c>Envelope</c> to expand to include.</param>
-        public void ExpandToInclude(Envelope other)
-        {
-            if (other.IsNull)
-                return;
-            if (IsNull)
-            {
-                _minx = other.MinX;
-                _maxx = other.MaxX;
-                _miny = other.MinY;
-                _maxy = other.MaxY;
-            }
-            else
-            {
-                if (other.MinX < _minx)
-                    _minx = other.MinX;
-                if (other.MaxX > _maxx)
-                    _maxx = other.MaxX;
-                if (other.MinY < _miny)
-                    _miny = other.MinY;
-                if (other.MaxY > _maxy)
-                    _maxy = other.MaxY;
-            }
-        }
+        ///// <summary>
+        ///// Enlarges this <c>Envelope</c> so that it contains
+        ///// the <c>other</c> Envelope.
+        ///// Has no effect if <c>other</c> is wholly on or
+        ///// within the envelope.
+        ///// </summary>
+        ///// <param name="other">the <c>Envelope</c> to expand to include.</param>
+        //public void ExpandToInclude(Envelope other)
+        //{
+        //    if (other.IsNull)
+        //        return;
+        //    if (IsNull)
+        //    {
+        //        _minx = other.MinX;
+        //        _maxx = other.MaxX;
+        //        _miny = other.MinY;
+        //        _maxy = other.MaxY;
+        //    }
+        //    else
+        //    {
+        //        if (other.MinX < _minx)
+        //            _minx = other.MinX;
+        //        if (other.MaxX > _maxx)
+        //            _maxx = other.MaxX;
+        //        if (other.MinY < _miny)
+        //            _miny = other.MinY;
+        //        if (other.MaxY > _maxy)
+        //            _maxy = other.MaxY;
+        //    }
+        //}
 
-        /// <summary>
-        /// Enlarges this <c>Envelope</c> so that it contains
-        /// the <c>other</c> Envelope.
-        /// Has no effect if <c>other</c> is wholly on or
-        /// within the envelope.
-        /// </summary>
-        /// <param name="other">the <c>Envelope</c> to expand to include.</param>
-        public Envelope ExpandedBy(Envelope other)
-        {
-            if (other.IsNull)
-                return this;
-            if (IsNull)
-                return other;
+        ///// <summary>
+        ///// Enlarges this <c>Envelope</c> so that it contains
+        ///// the <c>other</c> Envelope.
+        ///// Has no effect if <c>other</c> is wholly on or
+        ///// within the envelope.
+        ///// </summary>
+        ///// <param name="other">the <c>Envelope</c> to expand to include.</param>
+        //public Envelope ExpandedBy(Envelope other)
+        //{
+        //    if (other.IsNull)
+        //        return this;
+        //    if (IsNull)
+        //        return other;
 
-            var minx = (other._minx < _minx) ? other._minx : _minx;
-            var maxx = (other._maxx > _maxx) ? other._maxx : _maxx;
-            var miny = (other._miny < _miny) ? other._miny : _miny;
-            var maxy = (other._maxy > _maxy) ? other._maxy : _maxy;
-            return new Envelope(minx, maxx, miny, maxy);
-        }
-        /// <summary>
-        /// Translates this envelope by given amounts in the X and Y direction.
-        /// </summary>
-        /// <param name="transX">The amount to translate along the X axis.</param>
-        /// <param name="transY">The amount to translate along the Y axis.</param>
-        public void Translate(double transX, double transY)
-        {
-            if (IsNull)
-                return;
-            Init(MinX + transX, MaxX + transX, MinY + transY, MaxY + transY);
-        }
+        //    var minx = (other._minx < _minx) ? other._minx : _minx;
+        //    var maxx = (other._maxx > _maxx) ? other._maxx : _maxx;
+        //    var miny = (other._miny < _miny) ? other._miny : _miny;
+        //    var maxy = (other._maxy > _maxy) ? other._maxy : _maxy;
+        //    return new Envelope(minx, maxx, miny, maxy);
+        //}
+        ///// <summary>
+        ///// Translates this envelope by given amounts in the X and Y direction.
+        ///// </summary>
+        ///// <param name="transX">The amount to translate along the X axis.</param>
+        ///// <param name="transY">The amount to translate along the Y axis.</param>
+        //public void Translate(double transX, double transY)
+        //{
+        //    if (IsNull)
+        //        return;
+        //    Init(MinX + transX, MaxX + transX, MinY + transY, MaxY + transY);
+        //}
 
         /// <summary>
         /// Computes the coordinate of the centre of this envelope (as long as it is non-null).
@@ -540,41 +541,41 @@ namespace SharpSbn.DataStructures
             return !(other.MinX > _maxx || other.MaxX < _minx || other.MinY > _maxy || other.MaxY < _miny);
         }
 
-        /// <summary>
-        /// Use Intersects instead. In the future, Overlaps may be
-        /// changed to be a true overlap check; that is, whether the intersection is
-        /// two-dimensional.
-        /// </summary>
-        /// <param name="other"></param>
-        /// <returns></returns>
-        [Obsolete("Use Intersects instead")]
-        public bool Overlaps(Envelope other)
-        {
-            return Intersects(other);
-        }
+        ///// <summary>
+        ///// Use Intersects instead. In the future, Overlaps may be
+        ///// changed to be a true overlap check; that is, whether the intersection is
+        ///// two-dimensional.
+        ///// </summary>
+        ///// <param name="other"></param>
+        ///// <returns></returns>
+        //[Obsolete("Use Intersects instead")]
+        //public bool Overlaps(Envelope other)
+        //{
+        //    return Intersects(other);
+        //}
 
-        /// <summary>
-        /// Use Intersects instead.
-        /// </summary>
-        /// <param name="p"></param>
-        /// <returns></returns>
-        [Obsolete("Use Intersects instead")]
-        public bool Overlaps(Coordinate p)
-        {
-            return Intersects(p);
-        }
+        ///// <summary>
+        ///// Use Intersects instead.
+        ///// </summary>
+        ///// <param name="p"></param>
+        ///// <returns></returns>
+        //[Obsolete("Use Intersects instead")]
+        //public bool Overlaps(Coordinate p)
+        //{
+        //    return Intersects(p);
+        //}
 
-        /// <summary>
-        /// Use Intersects instead.
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <returns></returns>
-        [Obsolete("Use Intersects instead")]
-        public bool Overlaps(double x, double y)
-        {
-            return Intersects(x, y);
-        }
+        ///// <summary>
+        ///// Use Intersects instead.
+        ///// </summary>
+        ///// <param name="x"></param>
+        ///// <param name="y"></param>
+        ///// <returns></returns>
+        //[Obsolete("Use Intersects instead")]
+        //public bool Overlaps(double x, double y)
+        //{
+        //    return Intersects(x, y);
+        //}
 
         /// <summary>
         /// Check if the point <c>p</c> overlaps (lies inside) the region of this <c>Envelope</c>.
@@ -857,3 +858,4 @@ namespace SharpSbn.DataStructures
         }
     }
 }
+#endif

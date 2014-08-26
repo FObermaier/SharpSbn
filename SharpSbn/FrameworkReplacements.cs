@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 
 // ReSharper disable once CheckNamespace
-namespace FrameworkReplacemets
+namespace FrameworkReplacements
 {
 #if !(NET40 || NET45)
     public class Tuple<T1, T2>

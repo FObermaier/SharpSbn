@@ -2,27 +2,32 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-#if !(NET40 || NET45)
-using FrameworkReplacemets.Linq;
+//#if !(NET40 || NET45 || PCL)
+//using FrameworkReplacemets;
+//#if !NET35
+//using FrameworkReplacemets.Linq;
+//#endif
+//using Enumerable = System.Linq.Enumerable;
+//#else
+//using System.Linq;
+//#endif
+#if !NET35
+using Enumerable = FrameworkReplacements.Linq.Enumerable;
 #else
-using System.Linq;
+using Enumerable = System.Linq.Enumerable;
 #endif
-#if UseGeoAPI
-#if !NET40
-using Tuple = FrameworkReplacemets.Tuple<uint, GeoAPI.Geometries.IGeometry>;
-#else
-using Tuple = System.Tuple<uint, GeoAPI.Geometries.IGeometry>;
+#if !(NET40 || NET45 || PCL)
+using FrameworkReplacements;
 #endif
-#endif
-using System.Threading;
 #if UseGeoAPI
 using Interval = GeoAPI.DataStructures.Interval;
-using Envelope = GeoAPI.Geometries.Envelope;
+using GeoAPI.Geometries;
 #else
 using Interval = SharpSbn.DataStructures.Interval;
 using Envelope = SharpSbn.DataStructures.Envelope;
 #endif
-using SbnEnumerable = FrameworkReplacemets.Linq.Enumerable;
+using System.Threading;
+using SbnEnumerable = FrameworkReplacements.Linq.Enumerable;
 
 namespace SharpSbn
 {
@@ -283,9 +288,9 @@ namespace SharpSbn
         /// <param name="fid">The feature's id</param>
         /// <param name="geometry">The feature's geometry</param>
         [CLSCompliant(false)]
-        public void Insert(uint fid, IGeometry geometry)
+        public void Insert(uint fid, GeoAPI.Geometries.IGeometry geometry)
         {
-            Insert(fid, geometry.EnvelopeInternal)
+            Insert(fid, geometry.EnvelopeInternal);
 
         }
 
@@ -295,7 +300,7 @@ namespace SharpSbn
         /// <param name="fid">The feature's id</param>
         /// <param name="geometry">The geometry</param>
         /// <returns>A sbnfeature</returns>
-        private SbnFeature ToSbnFeature(uint fid, IGeometry geometry)
+        private SbnFeature ToSbnFeature(uint fid, GeoAPI.Geometries.IGeometry geometry)
         {
             return new SbnFeature(_header.Extent, fid, geometry.EnvelopeInternal);
         }
@@ -303,22 +308,24 @@ namespace SharpSbn
 #endif
 
         [CLSCompliant(false)]
-        public void Insert(uint fid, Envelope envelope)
+        public void Insert(uint fid, Envelope envelope, Interval? zRange, Interval? mRange)
         {
-
-            // Convert to an sbnfeature
-            var sbnFeature = ToSbnFeature(fid, envelope);
 
             // lock the tree
             Monitor.Enter(_syncRoot);
 
+            // Convert to an sbnfeature
+            var sbnFeature = ToSbnFeature(fid, envelope);
+
+            var inserted = false;
             // Has the tree already been built?
             if (Built)
             {
-                // Does the feature fit into the current tree
-                if (!Root.Contains(sbnFeature.MinX, sbnFeature.MinY, sbnFeature.MaxX, sbnFeature.MaxY) )
+                // Does the feature fit into the current tree, signal that 
+                // the tree needs to be recreated in order to function properly.
+                if (!_header.Extent.Contains(envelope))
                 {
-                    OnRebuildRequired(new SbnTreeRebuildRequiredEventArgs(fid, envelope));
+                    OnRebuildRequired(new SbnTreeRebuildRequiredEventArgs(fid, envelope, zRange, mRange));
                     Monitor.Exit(_syncRoot);
                     return;
                 }
@@ -331,11 +338,15 @@ namespace SharpSbn
                 {
                     // This can be done inplace.
                     RebuildTree(featureCount, sbnFeature);
+                    inserted = true;
                 }
             }
             
             //Insert the feature
-            Insert(sbnFeature);
+            if (!inserted) Insert(sbnFeature);
+            
+            // Update the header metrics
+            _header.AddFeature(fid, envelope, zRange ?? Interval.Create(), mRange ?? Interval.Create());
 
             // unlock the tree
             Monitor.Exit(_syncRoot);
@@ -354,7 +365,7 @@ namespace SharpSbn
 
             BuildTree(featureCount);
 
-            for (var i = 0; i < nodes.Length; i++)
+            for (var i = 1; i < nodes.Length; i++)
             {
                 foreach (var feature in nodes[i])
                     Insert(feature);
@@ -468,9 +479,9 @@ namespace SharpSbn
             if (File.Exists(sbnName)) File.Delete(sbnName);
             if (File.Exists(sbxName)) File.Delete(sbxName);
 
-            using (var sbnStream = new FileStream(sbnName, FileMode.Create, FileAccess.Write, FileShare.None))
+            var sbnStream = new FileStream(sbnName, FileMode.Create, FileAccess.Write, FileShare.None);
+            var sbxStream = new FileStream(sbxName, FileMode.Create, FileAccess.Write, FileShare.None);
             using (var sbnWriter = new BinaryWriter(sbnStream))
-            using (var sbxStream = new FileStream(sbxName, FileMode.Create, FileAccess.Write, FileShare.None))
             using (var sbxWriter = new BinaryWriter(sbxStream))
                 Write(sbnWriter, sbxWriter);
 
@@ -589,7 +600,7 @@ namespace SharpSbn
         public bool VerifyNodes()
         {
 #if DEBUG
-            foreach (var node in Nodes.Skip(1))
+            foreach (var node in Enumerable.Skip(Nodes, 1))
             {
                 if (!node.VerifyBins())
                     return false;
@@ -782,16 +793,18 @@ namespace SharpSbn
             return NumPySlicing.GetRange(Nodes, start, end, 1);
         }
 
-#if UseGeoAPI
         /// <summary>
         /// Method to create an <see cref="SbnTree"/> from a collection of (id, geometry) tuples
         /// </summary>
         /// <param name="boxedFeatures">The (id, geometry) tuples</param>
         /// <returns></returns>
-        public static SbnTree Create(ICollection<Tuple> boxedFeatures)
+        public static SbnTree Create(ICollection<Tuple<uint, Envelope>> boxedFeatures, Interval? zRange, Interval? mRange)
         {
             Interval x, y, z, m;
             GetIntervals(boxedFeatures, out x, out y, out z, out m);
+            if (zRange.HasValue) z = z.ExpandedByInterval(zRange.Value);
+            if (mRange.HasValue) m = m.ExpandedByInterval(mRange.Value);
+
             var tree = new SbnTree(new SbnHeader(boxedFeatures.Count, x, y, z, m));
             foreach (var boxedFeature in boxedFeatures)
             {
@@ -810,7 +823,7 @@ namespace SharpSbn
         /// <param name="yrange">The y-extent</param>
         /// <param name="zrange">The z-extent</param>
         /// <param name="mrange">The m-extent</param>
-        private static void GetIntervals(IEnumerable<Tuple> geoms, out Interval xrange, out Interval yrange,
+        private static void GetIntervals(IEnumerable<Tuple<uint, Envelope>> geoms, out Interval xrange, out Interval yrange,
             out Interval zrange, out Interval mrange)
         {
             xrange = Interval.Create();
@@ -828,7 +841,6 @@ namespace SharpSbn
                 mrange = mrange.ExpandedByInterval(m2Range);
             }
         }
-#endif
 
         /// <summary>
         /// Method to compact this <see cref="SbnTree"/>.
@@ -869,9 +881,19 @@ namespace SharpSbn
                         // this is weird but it works
                         if (child.FeatureCount < 4)
                         {
-                            for (var i = 0; i < 4; i++)
-                                node.LastBin.AddFeature(child.FirstBin[i]);
-                            child.FirstBin = null;
+                            if (node.FirstBin == null)
+                                node.FirstBin = new SbnBin();
+
+                            //for (var i = 0; i < child.FeatureCount; i++)
+                            //{
+                            //    //node.LastBin.AddFeature(child.FirstBin[i]);
+                            //    node.LastBin.AddFeature(child.RemoveAt(0));
+                            //}
+
+                            while (child.FeatureCount > 0)
+                            { node.LastBin.AddFeature(child.RemoveAt(0)); }
+                            //Debug.Assert(child.FeatureCount == 0);
+                            //child.FirstBin = null;
                         }
                     }
                 }

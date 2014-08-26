@@ -412,6 +412,7 @@ namespace SharpSbn
             void IDisposable.Dispose()
             {
                 _firstBin = null;
+                _currentBin = null;
             }
 
             public bool MoveNext()
@@ -600,6 +601,24 @@ namespace SharpSbn
             }
 
             return false;
+        }
+
+        internal SbnFeature RemoveAt(int index)
+        {
+            var bin = FirstBin;
+            while (index >= 100)
+            {
+                bin = bin.Next;
+                index -= 100;
+            }
+
+            var result = bin[index];
+            bin.RemoveAt(index);
+
+            if (FeatureCount == 0)
+                FirstBin = null;
+
+            return result;
         }
     }
 }

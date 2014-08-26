@@ -1,11 +1,16 @@
 #if UseGeoAPI
-using GeoAPI.DataStructures;
 using GeoAPI.Geometries;
+using Interval = GeoAPI.DataStructures.Interval;
+#else
+using Envelope = SharpSbn.DataStructures.Envelope;
+using Interval = SharpSbn.DataStructures.Interval;
+#endif
 
 namespace SharpSbn
 {
     internal static class GeometryMetricExtensions
     {
+#if UseGeoAPI
         internal static void GetMetric(IGeometry self, 
                                        out Interval xrange, out Interval yrange, 
                                        out Interval zrange, out Interval mrange)
@@ -92,6 +97,15 @@ namespace SharpSbn
 
             }
         }
+#endif
+        internal static void GetMetric(Envelope self,
+            out Interval xrange, out Interval yrange,
+            out Interval zrange, out Interval mrange)
+        {
+            xrange = Interval.Create(self.MinX, self.MaxX);
+            yrange = Interval.Create(self.MinY, self.MaxY);
+            zrange = Interval.Create();
+            mrange = Interval.Create();
+        }
     }
 }
-#endif

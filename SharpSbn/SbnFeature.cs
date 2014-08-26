@@ -150,5 +150,14 @@ namespace SharpSbn
             Buffer.BlockCopy(BitConverter.GetBytes(Fid), 0, res, 4, 4);
             return res;
         }
+
+        public static bool operator ==(SbnFeature lhs, SbnFeature rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+        public static bool operator !=(SbnFeature lhs, SbnFeature rhs)
+        {
+            return !lhs.Equals(rhs);
+        }
     }
 }

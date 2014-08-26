@@ -3,24 +3,24 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SolutionDir Condition=" '$(SolutionDir)' == '' ">..\</SolutionDir>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{E28F8461-D075-4DA6-8FBB-4DDE75D1E396}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SharpSbn</RootNamespace>
     <AssemblyName>SharpSbn</AssemblyName>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0.3</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
-    <geoApi>net20</geoApi>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <IncludeGeoAPI>no</IncludeGeoAPI>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;VERBOSE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NET20</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -29,14 +29,46 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;NET20;NET35;NET40</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
     <DocumentationFile>bin\Release\SharpSbn.XML</DocumentationFile>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'ReleaseGeoAPI|AnyCPU'">
+    <IncludeGeoAPI>yes</IncludeGeoAPI>
+    <OutputPath>bin\ReleaseGeoAPI\</OutputPath>
+    <DefineConstants>UseGeoAPI;TRACE;NET20</DefineConstants>
+    <DocumentationFile>bin\Release\SharpSbn.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <geoApi>net20</geoApi>
+    <AssemblyName>SharpSbn.GeoAPI</AssemblyName>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugGeoAPI|AnyCPU'">
+    <IncludeGeoAPI>yes</IncludeGeoAPI>
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\DebugGeoAPI\</OutputPath>
+    <DefineConstants>UseGeoAPI;TRACE;DEBUG;NET20</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <geoApi>net20</geoApi>
+    <AssemblyName>SharpSbn.GeoAPI</AssemblyName>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(IncludeGeoAPI)' == 'yes' ">
+    <Reference Include="GeoAPI">
+      <HintPath>$(SolutionDir)packages\GeoAPI.1.7.2\lib\$(geoApi)\GeoAPI.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClampUtility.cs" />

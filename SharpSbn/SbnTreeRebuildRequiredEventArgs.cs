@@ -1,5 +1,11 @@
 using System;
-
+#if (UseGeoAPI)
+using Envelope = GeoAPI.Geometries.Envelope;
+using Interval = GeoAPI.DataStructures.Interval;
+#else
+using Envelope = SharpSbn.DataStructures.Envelope;
+using Interval = SharpSbn.DataStructures.Interval;
+#endif
 namespace SharpSbn
 {
     /// <summary>
@@ -12,11 +18,15 @@ namespace SharpSbn
         /// </summary>
         /// <param name="fid">The feature's id</param>
         /// <param name="geometry">The features geometry</param>
+        /// <param name="zRange">An optional value for the z-Range</param>
+        /// <param name="mRange">An optional value for the m-Range</param>
         [CLSCompliant(false)]
-        public SbnTreeRebuildRequiredEventArgs(uint fid, object geometry)
+        public SbnTreeRebuildRequiredEventArgs(uint fid, Envelope geometry, Interval? zRange, Interval? mRange)
         {
             Fid = fid;
             Geometry = geometry;
+            ZRange = zRange;
+            MRange = mRange;
         }
 
         /// <summary>
@@ -28,6 +38,16 @@ namespace SharpSbn
         /// <summary>
         /// Gets a value indicating the geometry's 
         /// </summary>
-        public object Geometry { get; private set; }
+        public Envelope Geometry { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating the geometry's 
+        /// </summary>
+        public Interval? ZRange { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating the geometry's 
+        /// </summary>
+        public Interval? MRange { get; private set; }
     }
 }

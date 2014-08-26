@@ -127,10 +127,20 @@ namespace SharpSbn
         {
             if (index < NumFeatures - 1)
             {
-                for (var i = index + 1; i < 99; i++)
+                var max = NumFeatures - 1;
+                for (var i = index; i < max; i++)
                     _features[i] = _features[i + 1];
-                _features[99] = Next[0];
-                _next.RemoveAt(0);
+                
+                if (_next != null)
+                {
+                    _features[99] = _next[0];
+                    _next.RemoveAt(0);
+                }
+                else
+                {
+                    _features[max] = new SbnFeature();
+                    NumFeatures--;
+                }
             }
             else
             {

@@ -1,4 +1,4 @@
-﻿//#define picky
+﻿#define picky
 #if !UseGeoAPI
 
 using System;

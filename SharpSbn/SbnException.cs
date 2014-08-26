@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 namespace SharpSbn
 {
     /// <summary>
-    /// Exception for all <see cref="Sbn"/> related exceptions
+    /// Exception for all <see cref="SbnTree"/> related exceptions
     /// </summary>
 #if !PCL
     [Serializable]

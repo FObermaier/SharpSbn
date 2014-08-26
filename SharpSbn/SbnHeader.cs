@@ -152,9 +152,13 @@ namespace SharpSbn
             writer.Write(0);
         }
 
-        internal void AddFeature(uint id, Envelope geometry, Interval zRange, Interval mRange)
+        internal void AddFeature(uint id, Envelope geometry, Interval? zRange, Interval? mRange)
         {
             NumRecords++;
+            XRange = XRange.ExpandedByInterval(Interval.Create(geometry.MinX, geometry.MaxX));
+            YRange = YRange.ExpandedByInterval(Interval.Create(geometry.MinY, geometry.MaxY));
+            ZRange = ZRange.ExpandedByInterval(zRange ?? Interval.Create());
+            MRange = MRange.ExpandedByInterval(mRange ?? Interval.Create());
         }
 
         internal void RemoveFeature()
