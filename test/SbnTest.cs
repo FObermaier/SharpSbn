@@ -280,7 +280,18 @@ namespace SbnSharp.Test
                 Console.WriteLine("Querying part in {0:N0} ticks ({1} ids)", sw.ElapsedTicks, fids.Count);
             }
         }
-
+#if NET20
+        private static ICollection<FrameworkReplacements.Tuple<uint, SharpSbn.DataStructures.Envelope>> GetFeatures(FeatureDataTable fdt)
+        {
+            var res = new List<FrameworkReplacements.Tuple<uint, SharpSbn.DataStructures.Envelope>>(fdt.Count);
+            foreach (FeatureDataRow fdr in fdt.Rows)
+            {
+                var env = fdr.Geometry.EnvelopeInternal;
+                res.Add( FrameworkReplacements.Tuple.Create((uint)fdr[0] + 1, ToSbn(env)));
+            }
+            return res;
+        }
+#else
         private static ICollection<Tuple<uint, SharpSbn.DataStructures.Envelope>> GetFeatures(FeatureDataTable fdt)
         {
             var res = new List<Tuple<uint, SharpSbn.DataStructures.Envelope>>(fdt.Count);
@@ -291,6 +302,7 @@ namespace SbnSharp.Test
             }
             return res;
         }
+#endif
 
         [Test]
         public void TestGetNodeLevel()
@@ -343,9 +355,17 @@ namespace SbnSharp.Test
         //    }
 
         //}
+#if NET20
+        private ICollection<FrameworkReplacements.Tuple<uint, SharpSbn.DataStructures.Envelope>> _data;
+        private static ICollection<FrameworkReplacements.Tuple<uint, SharpSbn.DataStructures.Envelope>> CreateSampleData(int featureCount, SharpSbn.DataStructures.Envelope extent, uint offset = 0)
+        {
+            var res = new List<FrameworkReplacements.Tuple<uint, SharpSbn.DataStructures.Envelope>>();
+#else
+        private ICollection<Tuple<uint, SharpSbn.DataStructures.Envelope>> _data; 
         private static ICollection<Tuple<uint, SharpSbn.DataStructures.Envelope>> CreateSampleData(int featureCount, SharpSbn.DataStructures.Envelope extent, uint offset = 0)
         {
             var res = new List<Tuple<uint, SharpSbn.DataStructures.Envelope>>();
+#endif
             var rnd = new Random(5432);
             for (uint i = 1; i <= featureCount; i++)
             {
@@ -353,7 +373,13 @@ namespace SbnSharp.Test
                 var x2 = x1 + rnd.NextDouble()*(extent.MaxX - x1);
                 var y1 = extent.MinY + rnd.NextDouble()*extent.Height;
                 var y2 = y1 + rnd.NextDouble()*(extent.MaxY - y1);
-                res.Add(Tuple.Create(offset+i, new SharpSbn.DataStructures.Envelope(x1, x2, y1, y2)));
+                res.Add(
+#if NET20
+                    FrameworkReplacements.Tuple.Create(offset + i, new SharpSbn.DataStructures.Envelope(x1, x2, y1, y2))
+#else
+                    Tuple.Create(offset+i, new SharpSbn.DataStructures.Envelope(x1, x2, y1, y2))
+#endif
+                    );
             }
             return res;
         }
@@ -384,11 +410,16 @@ namespace SbnSharp.Test
         }
 
         private bool _rebuildRequiredFired;
-        private ICollection<Tuple<uint, SharpSbn.DataStructures.Envelope>> _data; 
         private void HandleRebuildRequired(object sender, SbnTreeRebuildRequiredEventArgs e)
         {
             _rebuildRequiredFired = true;
-            _data.Add(Tuple.Create(e.Fid, e.Geometry));
+            _data.Add(
+#if NET20
+                FrameworkReplacements.Tuple.Create(e.Fid, e.Geometry)
+#else
+                Tuple.Create(e.Fid, e.Geometry)
+#endif
+                );
         }
 
         [Test]

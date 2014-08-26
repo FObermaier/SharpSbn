@@ -53,6 +53,11 @@ namespace SharpSbn
         }
 
 #if !PCL
+        /// <summary>
+        /// Method to describe the tree's content
+        /// </summary>
+        /// <param name="sbnTree"></param>
+        /// <param name="writer"></param>
         public static void SbnToText(string sbnTree, TextWriter writer)
         {
             using (var br = new BinaryReader(File.OpenRead(sbnTree)))
@@ -208,6 +213,9 @@ namespace SharpSbn
         /// </summary>
         public object SyncRoot { get { return _syncRoot; } }
 
+        /// <summary>
+        /// Get a value indicating if this tree is synchronized
+        /// </summary>
         public bool IsSynchronized
         {
             get
@@ -290,7 +298,9 @@ namespace SharpSbn
         [CLSCompliant(false)]
         public void Insert(uint fid, GeoAPI.Geometries.IGeometry geometry)
         {
-            Insert(fid, geometry.EnvelopeInternal);
+            Interval x, y, z, m;
+            GeometryMetricExtensions.GetMetric(geometry, out x, out y, out z, out m);
+            Insert(fid, geometry.EnvelopeInternal, z, m);
 
         }
 
@@ -307,10 +317,14 @@ namespace SharpSbn
 
 #endif
 
+        /// <summary>
+        /// Method to insert a new feature to the tree
+        /// </summary>
+        /// <param name="fid">The feature's id</param>
+        /// <param name="envelope">The feature's geometry</param>
         [CLSCompliant(false)]
-        public void Insert(uint fid, Envelope envelope, Interval? zRange, Interval? mRange)
+        public void Insert(uint fid, Envelope envelope, Interval? zRange = null, Interval? mRange = null)
         {
-
             // lock the tree
             Monitor.Enter(_syncRoot);
 
@@ -797,8 +811,8 @@ namespace SharpSbn
         /// Method to create an <see cref="SbnTree"/> from a collection of (id, geometry) tuples
         /// </summary>
         /// <param name="boxedFeatures">The (id, geometry) tuples</param>
-        /// <returns></returns>
-        public static SbnTree Create(ICollection<Tuple<uint, Envelope>> boxedFeatures, Interval? zRange, Interval? mRange)
+        /// <returns>The newly created tree</returns>
+        public static SbnTree Create(ICollection<Tuple<uint, Envelope>> boxedFeatures, Interval? zRange = null, Interval? mRange = null)
         {
             Interval x, y, z, m;
             GetIntervals(boxedFeatures, out x, out y, out z, out m);
@@ -842,6 +856,56 @@ namespace SharpSbn
             }
         }
 
+#if UseGeoAPI
+        /// <summary>
+        /// Method to create an <see cref="SbnTree"/> from a collection of (id, geometry) tuples
+        /// </summary>
+        /// <param name="boxedFeatures">The (id, geometry) tuples</param>
+        /// <returns>The newly created tree</returns>
+        public static SbnTree Create(ICollection<Tuple<uint, IGeometry>> boxedFeatures, Interval? zRange = null, Interval? mRange = null)
+        {
+            Interval x, y, z, m;
+            GetIntervals(boxedFeatures, out x, out y, out z, out m);
+            if (zRange.HasValue) z = z.ExpandedByInterval(zRange.Value);
+            if (mRange.HasValue) m = m.ExpandedByInterval(mRange.Value);
+
+            var tree = new SbnTree(new SbnHeader(boxedFeatures.Count, x, y, z, m));
+            foreach (var boxedFeature in boxedFeatures)
+            {
+                tree.Insert(tree.ToSbnFeature(boxedFeature.Item1, boxedFeature.Item2));
+            }
+            
+            tree.CompactSeamFeatures();
+            return tree;
+        }
+
+        /// <summary>
+        /// Method to get some of the shapefile header values.
+        /// </summary>
+        /// <param name="geoms">An enumeration of (id, geometry) tuples</param>
+        /// <param name="xrange">The x-extent</param>
+        /// <param name="yrange">The y-extent</param>
+        /// <param name="zrange">The z-extent</param>
+        /// <param name="mrange">The m-extent</param>
+        private static void GetIntervals(IEnumerable<Tuple<uint, IGeometry>> geoms, out Interval xrange, out Interval yrange,
+            out Interval zrange, out Interval mrange)
+        {
+            xrange = Interval.Create();
+            yrange = Interval.Create();
+            zrange = Interval.Create();
+            mrange = Interval.Create();
+
+            foreach (var tuple in geoms)
+            {
+                Interval x2Range, y2Range, z2Range, m2Range;
+                GeometryMetricExtensions.GetMetric(tuple.Item2, out x2Range, out y2Range, out z2Range, out m2Range);
+                xrange = xrange.ExpandedByInterval(x2Range);
+                yrange = yrange.ExpandedByInterval(y2Range);
+                zrange = zrange.ExpandedByInterval(z2Range);
+                mrange = mrange.ExpandedByInterval(m2Range);
+            }
+        }
+#endif
         /// <summary>
         /// Method to compact this <see cref="SbnTree"/>.
         /// </summary>
