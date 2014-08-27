@@ -9,6 +9,9 @@ using Envelope = SharpSbn.DataStructures.Envelope;
 #endif
 namespace SharpSbn
 {
+    /// <summary>
+    /// A class containing ESRI SBN Index information
+    /// </summary>
     public class SbnHeader
     {
         /// <summary>
