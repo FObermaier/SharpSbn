@@ -427,7 +427,7 @@ namespace SbnSharp.Test
         {
             _data = CreateSampleData(50000, new SharpSbn.DataStructures.Envelope(-100, 100, -100, 100));
             var tree = SbnTree.Create(_data, null, null);
-
+            Assert.That(tree.FeatureCount == 50000);
             foreach (var tuple in CreateSampleData(50000, new SharpSbn.DataStructures.Envelope(-100, 100, -100, 100), 50001))
                 tree.Insert(tuple.Item1, tuple.Item2, null, null);
             Assert.IsTrue(tree.FeatureCount == 100000);

@@ -434,7 +434,7 @@ namespace SharpSbn
         /// <summary>
         /// Get a value indicating the number of features in the index
         /// </summary>
-        public int FeatureCount { get { return Root.CountAllFeatures(); } }
+        public int FeatureCount { get { return _header.NumRecords; /*Root.CountAllFeatures();*/ } }
 
         /// <summary>
         /// Gets a value indicating the id of the first leaf
