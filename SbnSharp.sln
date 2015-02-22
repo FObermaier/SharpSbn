@@ -17,6 +17,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSbn.PCL", "SharpSbn.PC
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{BDE9A125-7B3D-42E1-B519-0637568A1423}"
 	ProjectSection(SolutionItems) = preProject
+		SharpSbn.GeoAPI.nuspec = SharpSbn.GeoAPI.nuspec
+		SharpSbn.GeoAPI.targets = SharpSbn.GeoAPI.targets
+		SharpSbn.nuspec = SharpSbn.nuspec
 		SharpSbn.targets = SharpSbn.targets
 	EndProjectSection
 EndProject

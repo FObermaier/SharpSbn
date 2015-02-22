@@ -26,8 +26,8 @@ The implementation is based on hasbeen by Marc Pfister (drwelby).</description>
         <file src="Release\v4.03\SharpSbn.pdb" target="lib\net403-client\SharpSbn.pdb" />
         <file src="Release\v4.5\SharpSbn.dll" target="lib\net45\SharpSbn.dll" />
         <file src="Release\v4.5\SharpSbn.pdb" target="lib\net45\SharpSbn.pdb" />
-        <file src="Release\PCL.147\SharpSbn.PCL.dll" target="lib\portable-net403+sl5+wp71+win8\SharpSbn.PCL.dll" />
-        <file src="Release\PCL.147\SharpSbn.PCL.pdb" target="lib\portable-net403+sl5+wp71+win8\SharpSbn.PCL.pdb" />
+        <file src="Release\PCL.147\SharpSbn.dll" target="lib\portable-net403+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1\SharpSbn.PCL.dll" />
+        <file src="Release\PCL.147\SharpSbn.pdb" target="lib\portable-net403+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1\SharpSbn.PCL.pdb" />
 
         <file src="SharpSbn\DataStructures\Envelope.cs" target="src\DataStructures\Envelope.cs" />
         <file src="SharpSbn\DataStructures\Interval.cs" target="src\DataStructures\Interval.cs" />

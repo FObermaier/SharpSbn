@@ -3,7 +3,7 @@
     <metadata>
         <id>SharpSbn.GeoAPI</id>
         <version>$version$</version>
-        <title>Shapefile Spatial Index (SBN) Library</title>
+        <title>Shapefile Spatial Index (SBN) Library for GeoAPI</title>
         <authors>FObermaier</authors>
         <owners>FObermaier</owners>
         <licenseUrl>https://github.com/FObermaier/SbnSharp/blob/master/LICENSE.txt</licenseUrl>
@@ -17,7 +17,7 @@ This package depends on GeoAPI.
         <releaseNotes>Initial release</releaseNotes>
         <tags>SBN ShapeFile</tags>
         <dependencies>
-            <dependency id="GeoAPI" version="[1.7.2]" />
+            <dependency id="GeoAPI" version="[1.7,1.8)" />
         </dependencies>
     </metadata>
     <files>
@@ -32,11 +32,13 @@ This package depends on GeoAPI.
 <!--
         <file src="Release\v4.5\SharpSbn.GeoAPI.dll" target="lib\net45\SharpSbn.GeoAPI.dll" />
         <file src="Release\v4.5\SharpSbn.GeoAPI.pdb" target="lib\net45\SharpSbn.GeoAPI.pdb" />
-        <file src="Release\PCL.147\SharpSbn.GeoAPI.PCL.dll" target="lib\portable-net403+sl5+wp71+win8\SharpSbn.PCL.dll" />
-        <file src="Release\PCL.147\SharpSbn.GeoAPI.PCL.pdb" target="lib\portable-net403+sl5+wp71+win8\SharpSbn.PCL.pdb" />
+        <file src="Release\PCL.147\SharpSbn.GeoAPI.PCL.dll" target="lib\portable-net403+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1\SharpSbn.PCL.dll" />
+        <file src="Release\PCL.147\SharpSbn.GeoAPI.PCL.pdb" target="lib\portable-net403+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1\SharpSbn.PCL.pdb" />
 -->
+<!--
         <file src="SharpSbn\DataStructures\Envelope.cs" target="src\DataStructures\Envelope.cs" />
         <file src="SharpSbn\DataStructures\Interval.cs" target="src\DataStructures\Interval.cs" />
+-->
         <file src="SharpSbn\Properties\AssemblyInfo.cs" target="src\Properties\AssemblyInfo.cs" />
         <file src="SharpSbn\BinaryIOExtensions.cs" target="src\BinaryIOExtensions.cs" />
         <file src="SharpSbn\ClampUtility.cs" target="src\ClampUtility.cs" />
