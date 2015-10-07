@@ -232,7 +232,7 @@ namespace SharpSbn
         /// </summary>
         private void GatherFids()
         {
-            foreach (var sbnNode in Enumerable.Skip(Nodes, 1))
+            foreach (SbnNode sbnNode in Enumerable.Skip(Nodes, 1))
             {
                 if (sbnNode == null) continue;
 
