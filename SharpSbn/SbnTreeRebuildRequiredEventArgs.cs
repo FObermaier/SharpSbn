@@ -20,8 +20,9 @@ namespace SharpSbn
         /// <param name="geometry">The features geometry</param>
         /// <param name="zRange">An optional value for the z-Range</param>
         /// <param name="mRange">An optional value for the m-Range</param>
-        [CLSCompliant(false)]
+#pragma warning disable 3001
         public SbnTreeRebuildRequiredEventArgs(uint fid, Envelope geometry, Interval? zRange, Interval? mRange)
+#pragma warning restore 3001
         {
             Fid = fid;
             Geometry = geometry;

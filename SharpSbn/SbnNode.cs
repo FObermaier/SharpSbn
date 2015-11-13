@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 namespace SharpSbn
 {
+    /// <summary>
+    /// A Node in the <see cref="SbnTree"/>
+    /// </summary>
     public class SbnNode : IEnumerable<SbnFeature>
     {
         private readonly SbnTree _tree;
@@ -335,9 +338,11 @@ namespace SharpSbn
         }
 
         /// <summary>
-        /// 
+        /// Method to print out this <see cref="SbnNode"/>
         /// </summary>
-        /// <returns></returns>
+        /// <returns>
+        /// A text describing this <see cref="SbnNode"/>
+        /// </returns>
         public override string ToString()
         {
             return string.Format("[SbnNode {0}: ({1}-{2},{3}-{4})/{5}/{6}]", Nid, _minX, _maxX, _minY, _maxY, 
@@ -384,11 +389,20 @@ namespace SharpSbn
             return _minX >= minX && _maxX <= maxX &&
                    _minY >= minY && _maxY <= maxY;
         }
+
+        /// <summary>
+        /// Function to get an iterator over this node's <see cref="SbnFeature"/>s
+        /// </summary>
+        /// <returns>An iterator</returns>
         public IEnumerator<SbnFeature> GetEnumerator()
         {
             return new SbnFeatureEnumerator(FirstBin);
         }
 
+        /// <summary>
+        /// Function to get an iterator over this node's <see cref="SbnFeature"/>s
+        /// </summary>
+        /// <returns>An iterator</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
@@ -461,6 +475,10 @@ namespace SharpSbn
             }
         }
 
+        /// <summary>
+        /// Method to verify this node's bins
+        /// </summary>
+        /// <returns><value>true</value> if all bins are valid</returns>
         public bool VerifyBins()
         {
 #if DEBUG

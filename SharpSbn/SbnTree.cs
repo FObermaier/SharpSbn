@@ -202,6 +202,10 @@ namespace SharpSbn
             Monitor.Exit(_syncRoot);
         }
 
+        /// <summary>
+        /// Creates an instance of this class using the provided header
+        /// </summary>
+        /// <param name="header">The header</param>
         public SbnTree(SbnHeader header)
         {
             _header = header;
@@ -322,8 +326,11 @@ namespace SharpSbn
         /// </summary>
         /// <param name="fid">The feature's id</param>
         /// <param name="envelope">The feature's geometry</param>
-        [CLSCompliant(false)]
+        /// <param name="zRange">The z-ordinate extent</param>
+        /// <param name="mRange">The m-ordinate extent</param>
+#pragma warning disable 3001
         public void Insert(uint fid, Envelope envelope, Interval? zRange = null, Interval? mRange = null)
+#pragma warning restore 3001
         {
             // lock the tree
             Monitor.Enter(_syncRoot);
@@ -394,8 +401,9 @@ namespace SharpSbn
         /// </summary>
         /// <param name="fid">The id of the feature</param>
         /// <param name="envelope">The envelope in which to search for the feature</param>
-        [CLSCompliant(false)]
+#pragma warning disable 3001
         public void Remove(uint fid, Envelope envelope = null)
+#pragma warning restore 3001
         {
             Monitor.Enter(_syncRoot);
 
@@ -611,6 +619,10 @@ namespace SharpSbn
             }*/
         }
 
+        /// <summary>
+        /// Method to verify the nodes
+        /// </summary>
+        /// <returns><value>true</value> if all nodes are correct</returns>
         public bool VerifyNodes()
         {
 #if DEBUG
@@ -811,6 +823,8 @@ namespace SharpSbn
         /// Method to create an <see cref="SbnTree"/> from a collection of (id, geometry) tuples
         /// </summary>
         /// <param name="boxedFeatures">The (id, geometry) tuples</param>
+        /// <param name="zRange">The z-ordinate extent</param>
+        /// <param name="mRange">The m-ordinate extent</param>
         /// <returns>The newly created tree</returns>
         public static SbnTree Create(ICollection<Tuple<uint, Envelope>> boxedFeatures, Interval? zRange = null, Interval? mRange = null)
         {
@@ -861,6 +875,8 @@ namespace SharpSbn
         /// Method to create an <see cref="SbnTree"/> from a collection of (id, geometry) tuples
         /// </summary>
         /// <param name="boxedFeatures">The (id, geometry) tuples</param>
+        /// <param name="zRange">The z-ordinate extent</param>
+        /// <param name="mRange">The m-ordinate extent</param>
         /// <returns>The newly created tree</returns>
         public static SbnTree Create(ICollection<Tuple<uint, IGeometry>> boxedFeatures, Interval? zRange = null, Interval? mRange = null)
         {

@@ -46,7 +46,7 @@ namespace SharpSbn
         /// <param name="header">The header of the index</param>
         /// <param name="fid">The feature's id</param>
         /// <param name="extent">The feature's extent</param>
-        [CLSCompliant(false)]
+#pragma warning disable 3001
         public SbnFeature(SbnHeader header, uint fid, Envelope extent)
             :this(header.Extent, fid, extent)
         {
@@ -58,12 +58,12 @@ namespace SharpSbn
         /// <param name="sfExtent">The extent of the index</param>
         /// <param name="fid">The feature's id</param>
         /// <param name="extent">The feature's extent</param>
-        [CLSCompliant(false)]
         public SbnFeature(Envelope sfExtent, uint fid, Envelope extent)
         {
             _fid = fid;
             ClampUtility.Clamp(sfExtent, extent, out MinX, out MinY, out MaxX, out MaxY);
         }
+#pragma warning restore 3001
 
         //public SbnFeature(byte[] featureBytes)
         //{
@@ -118,11 +118,21 @@ namespace SharpSbn
             BinaryIOExtensions.WriteBE(writer, _fid);
         }
 
+        /// <summary>
+        /// Function to test if this <see cref="SbnFeature"/> equals <paramref name="other"/>
+        /// </summary>
+        /// <param name="other">The other feature</param>
+        /// <returns><value>true</value> if the this <see cref="Fid"/> equals <paramref name="other"/>'s <see cref="Fid"/></returns>
         public bool Equals(SbnFeature other)
         {
             return other.Fid == _fid;
         }
 
+        /// <summary>
+        /// Function to test if this <see cref="SbnFeature"/> equals <paramref name="other"/>
+        /// </summary>
+        /// <param name="other">The other feature</param>
+        /// <returns><value>true</value> if the this <see cref="Fid"/> equals <paramref name="other"/>'s <see cref="Fid"/></returns>
         public override bool Equals(object other)
         {
             if (other is SbnFeature)
@@ -130,16 +140,30 @@ namespace SharpSbn
             return false;
         }
 
+        /// <summary>
+        /// Function to return the hashcode for this object.
+        /// </summary>
+        /// <returns>
+        /// A hashcode
+        /// </returns>
         public override int GetHashCode()
         {
             return 31 * typeof(SbnFeature).GetHashCode() * _fid.GetHashCode();
         }
 
+        /// <summary>
+        /// Method to print out this <see cref="SbnFeature"/>
+        /// </summary>
+        /// <returns>A text describing this <see cref="SbnFeature"/></returns>
         public override string ToString()
         {
             return string.Format("[SbnFeature {0}: ({1}-{2},{3}-{4})]", _fid, MinX, MaxX, MinY, MaxY);
         }
 
+        /// <summary>
+        /// Method to convert the feature to a byte array
+        /// </summary>
+        /// <returns>An array of bytes</returns>
         internal Array AsBytes()
         {
             var res = new byte[8];
@@ -151,10 +175,22 @@ namespace SharpSbn
             return res;
         }
 
+        /// <summary>
+        /// An operator for equuality comarison
+        /// </summary>
+        /// <param name="lhs">The value on the left-hand-side</param>
+        /// <param name="rhs">The value on the right-hand-side</param>
+        /// <returns><value>true</value> if <paramref name="lhs"/> == <paramref name="rhs"/></returns>
         public static bool operator ==(SbnFeature lhs, SbnFeature rhs)
         {
             return lhs.Equals(rhs);
         }
+        /// <summary>
+        /// An operator for inequuality comarison
+        /// </summary>
+        /// <param name="lhs">The value on the left-hand-side</param>
+        /// <param name="rhs">The value on the right-hand-side</param>
+        /// <returns><value>true</value> if <paramref name="lhs"/> != <paramref name="rhs"/></returns>
         public static bool operator !=(SbnFeature lhs, SbnFeature rhs)
         {
             return !lhs.Equals(rhs);

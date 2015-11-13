@@ -5,17 +5,34 @@ using System.Text;
 
 namespace SharpSbn.DataStructures
 {
+    /// <summary>
+    /// A 2D coordinate class
+    /// </summary>
     public class Coordinate
     {
+        /// <summary>
+        /// The x-ordinate value
+        /// </summary>
         public double X;
+        /// <summary>
+        /// The y-ordinate value
+        /// </summary>
         public double Y;
 
+        /// <summary>
+        /// Creates an instance of this class
+        /// </summary>
+        /// <param name="x">The x-ordinate value</param>
+        /// <param name="y">The y-ordinate value</param>
         public Coordinate(double x, double y)
         {
             X = x;
             Y = y;
         }
 
+        /// <summary>
+        /// Function to check if this coordinate is null
+        /// </summary>
         public bool IsNull { get { return double.IsNaN(X); }}
     }
     
@@ -795,6 +812,12 @@ namespace SharpSbn.DataStructures
         //    return !(obj1 == obj2);
         //}
 
+        /// <summary>
+        /// Method to print out this <see cref="SbnHeader"/>
+        /// </summary>
+        /// <returns>
+        /// A text describing this <see cref="SbnHeader"/>
+        /// </returns>
         public override string ToString()
         {
             var sb = new StringBuilder("Env[");

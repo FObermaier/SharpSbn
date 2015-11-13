@@ -513,6 +513,9 @@ namespace SharpSbn
             }
         }
 
+        /// <summary>
+        /// Method to dispose this object
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);

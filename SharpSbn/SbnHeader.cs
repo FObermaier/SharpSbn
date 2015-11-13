@@ -52,6 +52,14 @@ namespace SharpSbn
             MRange = Interval.Create();
         }
 
+        /// <summary>
+        /// Creates an instance of this class
+        /// </summary>
+        /// <param name="numRecords">The number of features</param>
+        /// <param name="xInterval">The x-Oridnate extent</param>
+        /// <param name="yInterval">The y-Oridnate extent</param>
+        /// <param name="zInterval">The z-Oridnate extent</param>
+        /// <param name="mInterval">The m-Oridnate extent</param>
         public SbnHeader(int numRecords, Interval xInterval, Interval yInterval, Interval zInterval, Interval mInterval)
         {
             NumRecords = numRecords;
@@ -169,6 +177,12 @@ namespace SharpSbn
             NumRecords--;
         }
 
+        /// <summary>
+        /// Method to print out this <see cref="SbnHeader"/>
+        /// </summary>
+        /// <returns>
+        /// A text describing this <see cref="SbnHeader"/>
+        /// </returns>
         public override string ToString()
         {
             var res = new StringBuilder();
