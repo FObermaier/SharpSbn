@@ -23,8 +23,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSbn", "SharpSbn\SharpS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSbn.Test", "test\SharpSbn.Test.csproj", "{C05CE679-851D-4542-98B9-051A7F46F2BF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSbn.PCL", "SharpSbn.PCL\SharpSbn.PCL.csproj", "{1A3D1636-8576-463D-BA97-673E739A0B3C}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,11 +44,6 @@ Global
 		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C05CE679-851D-4542-98B9-051A7F46F2BF}.ReleaseGeoAPI|Any CPU.ActiveCfg = Release|Any CPU
-		{1A3D1636-8576-463D-BA97-673E739A0B3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1A3D1636-8576-463D-BA97-673E739A0B3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1A3D1636-8576-463D-BA97-673E739A0B3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1A3D1636-8576-463D-BA97-673E739A0B3C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1A3D1636-8576-463D-BA97-673E739A0B3C}.ReleaseGeoAPI|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
