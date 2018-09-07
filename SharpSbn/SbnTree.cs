@@ -2,23 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-//#if !(NET40 || NET45 || PCL)
-//using FrameworkReplacemets;
-//#if !NET35
-//using FrameworkReplacemets.Linq;
-//#endif
-//using Enumerable = System.Linq.Enumerable;
-//#else
-//using System.Linq;
-//#endif
-#if !NET35
-using Enumerable = FrameworkReplacements.Linq.Enumerable;
-#else
 using Enumerable = System.Linq.Enumerable;
-#endif
-#if !(NET40 || NET45 || PCL)
-using FrameworkReplacements;
-#endif
 #if UseGeoAPI
 using Interval = GeoAPI.DataStructures.Interval;
 using GeoAPI.Geometries;
@@ -27,7 +11,6 @@ using Interval = SharpSbn.DataStructures.Interval;
 using Envelope = SharpSbn.DataStructures.Envelope;
 #endif
 using System.Threading;
-using SbnEnumerable = FrameworkReplacements.Linq.Enumerable;
 
 namespace SharpSbn
 {
@@ -299,7 +282,6 @@ namespace SharpSbn
         /// </summary>
         /// <param name="fid">The feature's id</param>
         /// <param name="geometry">The feature's geometry</param>
-        [CLSCompliant(false)]
         public void Insert(uint fid, GeoAPI.Geometries.IGeometry geometry)
         {
             Interval x, y, z, m;
@@ -735,7 +717,7 @@ namespace SharpSbn
             var start = (int)Math.Pow(2, level - 1);
             var end = 2 * start - 1;
             var featureCount = 0;
-            foreach (var n in SbnEnumerable.GetRange(Nodes, start, end - start + 1))
+            foreach (var n in NumPySlicing.GetRange(Nodes, start, end - start + 1))
                 featureCount += n.FeatureCount;
             return featureCount;
         }
@@ -751,9 +733,9 @@ namespace SharpSbn
                 throw new ArgumentNullException("out");
 
             @out.WriteLine("#Description");
-            @out.WriteLine("#            f=full [0, 1]");
-            @out.WriteLine("#                sf=features on seam");
-            @out.WriteLine("#                   h=holdfeatures");
+            @out.WriteLine("#    f=full [0, 1]");
+            @out.WriteLine("#    sf=features on seam");
+            @out.WriteLine("#    h=holdfeatures");
             @out.WriteLine("#level node  f   sf h");
             for (var i = 1; i <= NumLevels; i++)
             {
@@ -940,14 +922,14 @@ namespace SharpSbn
             foreach (var node in NumPySlicing.GetRange(Nodes, start, end, -1))
             {
                 var id = node.Nid;
-                var children = SbnEnumerable.GetRange(Nodes, id * 2, 2);
+                var children = NumPySlicing.GetRange(Nodes, id * 2, 2);
                 foreach (var child in children)
                 {
                     // There are no items to pull up
                     if (child.FeatureCount == 0) continue;
 
                     var cid = child.Nid;
-                    var grandchildren = SbnEnumerable.GetRange(Nodes, cid * 2, 2);
+                    var grandchildren = NumPySlicing.GetRange(Nodes, cid * 2, 2);
                     var gccount = 0;
                     foreach (var gcnode in grandchildren)
                         gccount += gcnode.FeatureCount;

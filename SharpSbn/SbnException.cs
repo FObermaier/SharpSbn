@@ -1,12 +1,14 @@
 using System;
+#if !NETSTANDARD
 using System.Runtime.Serialization;
+#endif
 
 namespace SharpSbn
 {
     /// <summary>
     /// Exception for all <see cref="SbnTree"/> related exceptions
     /// </summary>
-#if !PCL
+#if !(NETSTANDARD || PCL)
     [Serializable]
 #endif
     public class SbnException : Exception
@@ -29,7 +31,7 @@ namespace SharpSbn
             : base(message, innerException)
         {
         }
-#if !PCL
+#if !(NETSTANDARD || PCL)
         /// <summary>
         /// Creates an instance of this class
         /// </summary>

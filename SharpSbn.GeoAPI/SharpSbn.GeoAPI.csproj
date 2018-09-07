@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="$(SolutionDir)SharpSbn.Common.props" />
+  <!--<Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets"/>-->
+
+  <PropertyGroup>
+    <TargetFrameworks>net40-client;netstandard1.3</TargetFrameworks>
+    <PackageId>SharpSbn.GeoAPI</PackageId>
+    <Product>SharpSbn.GeoAPI</Product>
+    <AssemblyName>SharpSbn.GeoAPI</AssemblyName>
+    <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <DefineConstants>TRACE;UseGeoAPI</DefineConstants>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Compile Include="..\SharpSbn\BinaryIOExtensions.cs" Link="BinaryIOExtensions.cs" />
+    <Compile Include="..\SharpSbn\ClampUtility.cs" Link="ClampUtility.cs" />
+    <Compile Include="..\SharpSbn\GeometryMetricExtensions.cs" Link="GeometryMetricExtensions.cs" />
+    <Compile Include="..\SharpSbn\NumPySlicing.cs" Link="NumPySlicing.cs" />
+    <Compile Include="..\SharpSbn\Properties\AssemblyInfo.cs" Link="Properties\AssemblyInfo.cs" />
+    <Compile Include="..\SharpSbn\SbnBin.cs" Link="SbnBin.cs" />
+    <Compile Include="..\SharpSbn\SbnException.cs" Link="SbnException.cs" />
+    <Compile Include="..\SharpSbn\SbnFeature.cs" Link="SbnFeature.cs" />
+    <Compile Include="..\SharpSbn\SbnHeader.cs" Link="SbnHeader.cs" />
+    <Compile Include="..\SharpSbn\SbnNode.cs" Link="SbnNode.cs" />
+    <Compile Include="..\SharpSbn\SbnQueryOnlyTree.cs" Link="SbnQueryOnlyTree.cs" />
+    <Compile Include="..\SharpSbn\SbnTree.cs" Link="SbnTree.cs" />
+    <Compile Include="..\SharpSbn\SbnTreeRebuildRequiredEventArgs.cs" Link="SbnTreeRebuildRequiredEventArgs.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GeoAPI.Core" Version="1.7.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+
+</Project>

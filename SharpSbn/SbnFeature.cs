@@ -102,7 +102,6 @@ namespace SharpSbn
         /// <summary>
         /// Gets the id of this feature
         /// </summary>
-        [CLSCompliant(false)]
         public uint Fid { get { return _fid; } }
 
         /// <summary>

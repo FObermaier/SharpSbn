@@ -1,0 +1,24 @@
+<Project>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net40-client' ">
+    <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OutputPath>$(SolutionDir)$(Configuration)\$(Platform)</OutputPath>
+    <Version>1.2.0</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Copyright>Copyright (c) Felix Obermaier 2013-2018</Copyright>
+    <Authors>Felix Obermaier</Authors>
+    <Company></Company>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/fobermaier/SbnSharp.git</RepositoryUrl>
+    <PackageIconUrl></PackageIconUrl>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/FObermaier/SbnSharp/master/LICENSE.txt</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/fobermaier/SbnSharp</PackageProjectUrl>
+    <RootNamespace>SharpSbn</RootNamespace>
+  </PropertyGroup>
+
+</Project>

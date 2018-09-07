@@ -1,0 +1,5 @@
+<Project>
+ <PropertyGroup>
+  <!--<BaseIntermediateOutputPath>$(SolutionDir)$(ProjectName)\obj\$(ProjectName)</BaseIntermediateOutputPath>-->
+ </PropertyGroup>
+</Project>

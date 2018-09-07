@@ -1,46 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
 using GeoAPI.DataStructures;
 using GeoAPI.Geometries;
 using NUnit.Framework;
-using SharpMap.Data;
-using SharpMap.Data.Providers;
 using SharpSbn;
 
 namespace SbnSharp.Test
 {
     public class SbnTest
     {
+#if Use_SbnSharp_GeoAPI
+        private static Envelope ToSbn(Envelope envelope)
+        {
+            return envelope;
+        }
+        private static Interval ToSbn(Interval interval)
+        {
+            return interval;
+        }
+#else
+        private static SharpSbn.DataStructures.Envelope ToSbn(Envelope envelope)
+        {
+            return new SharpSbn.DataStructures.Envelope(envelope.MinX, envelope.MaxX, envelope.MinY, envelope.MaxY);
+        }
+        private static Interval ToSbn(Interval interval)
+        {
+            return new SharpSbn.DataStructures.Interval(interval.Min, interval.Max);
+        }
+#endif
+
         public SbnTest()
         {
             GeoAPI.GeometryServiceProvider.Instance = NetTopologySuite.NtsGeometryServices.Instance;
-
         }
-
-        //[Ignore]
-        //[TestCase("data\\riksgrs.sbn")]
-        //[TestCase("data\\road_r.sbn")]
-        //public void OldTest(string sbnFile)
-        //{
-        //    Sbn sbn = null;
-        //    Assert.DoesNotThrow(() => sbn = Sbn.Load(sbnFile));
-        //    Assert.IsNotNull(sbn);
-
-        //    var sbnTestFile = Path.ChangeExtension(sbnFile, null) + "_test.sbn";
-        //    Assert.DoesNotThrow(() => sbn.Save(sbnTestFile));
-        //    var fiO = new FileInfo(sbnFile);
-        //    var fiT = new FileInfo(sbnTestFile);
-
-        //    Assert.AreEqual(fiO.Length, fiT.Length);
-        //}
 
         [TestCase("data\\riksgrs.sbn")]
         [TestCase("data\\road_r.sbn")]
@@ -64,45 +58,7 @@ namespace SbnSharp.Test
             Assert.AreEqual(fiO.Length, fiT.Length);
         }
 
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        ///// <param name="shpFile"></param>
-        //[TestCase("data\\road_r.shp")]
-        //[TestCase("data\\S2_jarnvag_besk_polyline.shp")]
-        //public void OldTestCreateSbn(string shpFile)
-        //{
-        //    using (var p = new ShapeFile(shpFile, false))
-        //    {
-        //        p.Open();
-        //        var extent = p.GetExtents();
-                
-        //        var fds = new FeatureDataSet();
-        //        p.ExecuteIntersectionQuery(extent, fds);
-        //        p.Close();
-
-        //        var fdt = fds.Tables[0];
-        //        var tree = OldSbnTree.Create(GetFeaturesBox(fdt));
-
-        //        Console.WriteLine(tree.FeaturesInLevel(1));
-        //        Console.WriteLine(tree.FeaturesInLevel(2));
-        //        Console.WriteLine(tree.FeaturesInLevel(3));
-
-        //        Assert.AreEqual(fdt.Rows.Count, tree.Root.Count);
-
-        //        Assert.AreEqual(fdt.Rows.Count, tree.QueryFeatureIds(extent).Count());
-        //        var shrunk = extent.Grow(-0.2*extent.Width, - 0.2*extent.Height);
-        //        Assert.Less(tree.QueryFeatureIds(shrunk).Count(), fdt.Rows.Count);
-                
-        //        Console.WriteLine();
-        //        tree.DescribeTree(Console.Out);
-        //    }
-        //}
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="shpFile"></param>
+        /*
         [TestCase("data\\road_r.shp")]
         [TestCase("data\\S2_jarnvag_besk_polyline.shp")]
         [TestCase("data\\rivers.shp")]
@@ -173,18 +129,18 @@ namespace SbnSharp.Test
                 SbnTree.SbnToText(sbn, new StreamWriter(File.OpenWrite(Path.ChangeExtension(sbn, ".createdsbn.txt"))));
             
         }
-
         [Pure]
-        private static SharpSbn.DataStructures.Envelope ToSbn(Envelope extent)
+        private static Envelope ToSbn(Envelope extent)
         {
-            return new SharpSbn.DataStructures.Envelope(extent.MinX, extent.MaxX, extent.MinY, extent.MaxY);
+            return new Envelope(extent.MinX, extent.MaxX, extent.MinY, extent.MaxY);
         }
 
         [Pure]
-        private static SharpSbn.DataStructures.Interval ToSbn(Interval interval)
+        private static Interval ToSbn(Interval interval)
         {
-            return SharpSbn.DataStructures.Interval.Create(interval.Min, interval.Max);
+            return Interval.Create(interval.Min, interval.Max);
         }
+        */
 
         [TestCase("data\\riksgrs.sbn")]
         [TestCase("data\\road_r.sbn")]
@@ -206,8 +162,8 @@ namespace SbnSharp.Test
             Assert.DoesNotThrow(() => SbnTree.SbnToText(sbnTestFile, new StreamWriter(File.OpenWrite(Path.ChangeExtension(sbnTestFile, ".sbn.txt")))));
         }
 
-        [TestCase("data\\road_r.sbn")]
-        [TestCase("data\\road_r_modified.sbn")]
+        [TestCase("data\\road_R.sbn")]
+        [TestCase("data\\road_R_modified.sbn")]
         public void TestQueryTime(string sbnFile)
         {
             if (!File.Exists(sbnFile))
@@ -243,8 +199,8 @@ namespace SbnSharp.Test
             }
         }
 
-        [TestCase("data\\road_r.sbn")]
-        [TestCase("data\\road_r_modified.sbn")]
+        [TestCase("data\\road_R.sbn")]
+        [TestCase("data\\road_R_modified.sbn")]
         public void TestQueryTime2(string sbnFile)
         {
             if (!File.Exists(sbnFile))
@@ -280,10 +236,11 @@ namespace SbnSharp.Test
                 Console.WriteLine("Querying part in {0:N0} ticks ({1} ids)", sw.ElapsedTicks, fids.Count);
             }
         }
+#if HAS_SHARPMAP
 #if NET20
-        private static ICollection<FrameworkReplacements.Tuple<uint, SharpSbn.DataStructures.Envelope>> GetFeatures(FeatureDataTable fdt)
+        private static ICollection<FrameworkReplacements.Tuple<uint, Envelope>> GetFeatures(FeatureDataTable fdt)
         {
-            var res = new List<FrameworkReplacements.Tuple<uint, SharpSbn.DataStructures.Envelope>>(fdt.Count);
+            var res = new List<FrameworkReplacements.Tuple<uint, Envelope>>(fdt.Count);
             foreach (FeatureDataRow fdr in fdt.Rows)
             {
                 var env = fdr.Geometry.EnvelopeInternal;
@@ -292,9 +249,9 @@ namespace SbnSharp.Test
             return res;
         }
 #else
-        private static ICollection<Tuple<uint, SharpSbn.DataStructures.Envelope>> GetFeatures(FeatureDataTable fdt)
+        private static ICollection<Tuple<uint, Envelope>> GetFeatures(FeatureDataTable fdt)
         {
-            var res = new List<Tuple<uint, SharpSbn.DataStructures.Envelope>>(fdt.Count);
+            var res = new List<Tuple<uint, Envelope>>(fdt.Count);
             foreach (FeatureDataRow fdr in fdt.Rows)
             {
                 var env = fdr.Geometry.EnvelopeInternal;
@@ -302,6 +259,7 @@ namespace SbnSharp.Test
             }
             return res;
         }
+#endif
 #endif
 
         [Test]
@@ -356,15 +314,15 @@ namespace SbnSharp.Test
 
         //}
 #if NET20
-        private ICollection<FrameworkReplacements.Tuple<uint, SharpSbn.DataStructures.Envelope>> _data;
-        private static ICollection<FrameworkReplacements.Tuple<uint, SharpSbn.DataStructures.Envelope>> CreateSampleData(int featureCount, SharpSbn.DataStructures.Envelope extent, uint offset = 0)
+        private ICollection<FrameworkReplacements.Tuple<uint, Envelope>> _data;
+        private static ICollection<FrameworkReplacements.Tuple<uint, Envelope>> CreateSampleData(int featureCount, Envelope extent, uint offset = 0)
         {
-            var res = new List<FrameworkReplacements.Tuple<uint, SharpSbn.DataStructures.Envelope>>();
+            var res = new List<FrameworkReplacements.Tuple<uint, Envelope>>();
 #else
-        private ICollection<Tuple<uint, SharpSbn.DataStructures.Envelope>> _data; 
-        private static ICollection<Tuple<uint, SharpSbn.DataStructures.Envelope>> CreateSampleData(int featureCount, SharpSbn.DataStructures.Envelope extent, uint offset = 0)
+        private ICollection<Tuple<uint, Envelope>> _data; 
+        private static ICollection<Tuple<uint, Envelope>> CreateSampleData(int featureCount, Envelope extent, uint offset = 0)
         {
-            var res = new List<Tuple<uint, SharpSbn.DataStructures.Envelope>>();
+            var res = new List<Tuple<uint, Envelope>>();
 #endif
             var rnd = new Random(5432);
             for (uint i = 1; i <= featureCount; i++)
@@ -375,9 +333,9 @@ namespace SbnSharp.Test
                 var y2 = y1 + rnd.NextDouble()*(extent.MaxY - y1);
                 res.Add(
 #if NET20
-                    FrameworkReplacements.Tuple.Create(offset + i, new SharpSbn.DataStructures.Envelope(x1, x2, y1, y2))
+                    FrameworkReplacements.Tuple.Create(offset + i, new Envelope(x1, x2, y1, y2))
 #else
-                    Tuple.Create(offset+i, new SharpSbn.DataStructures.Envelope(x1, x2, y1, y2))
+                    Tuple.Create(offset+i, new Envelope(x1, x2, y1, y2))
 #endif
                     );
             }
@@ -385,28 +343,28 @@ namespace SbnSharp.Test
         }
 
         private static readonly System.Random IntervalRandom = new Random(4326);
-        private static SharpSbn.DataStructures.Interval CreateInterval(SharpSbn.DataStructures.Interval range)
+        private static Interval CreateInterval(Interval range)
         {
             var lo = range.Min + IntervalRandom.NextDouble()*(range.Max - range.Min);
             var hi = lo + IntervalRandom.NextDouble()*(range.Max - lo);
-            return SharpSbn.DataStructures.Interval.Create(lo, hi);
+            return Interval.Create(lo, hi);
         }
 
         [Test]
         public void TestCreateAndExtend()
         {
-            _data = CreateSampleData(50000, new SharpSbn.DataStructures.Envelope(-100, 100, - 100, 100));
+            _data = CreateSampleData(50000, new Envelope(-100, 100, - 100, 100));
             var tree = SbnTree.Create(_data, null, null);
             tree.RebuildRequried += HandleRebuildRequired;
             _rebuildRequiredFired = false;
-            tree.Insert(500002, new SharpSbn.DataStructures.Envelope(-110, -100, -110, -100), null, null);
+            tree.Insert(500002, new Envelope(-110, -100, -110, -100), null, null);
 
             Assert.IsTrue(_rebuildRequiredFired);
             tree = SbnTree.Create(_data, tree.ZRange, tree.MRange);
             Assert.IsTrue(tree.FeatureCount == 50001);
-            Assert.IsTrue(new SharpSbn.DataStructures.Envelope(-110, 100, -110, 100).Contains(tree.Extent));
+            Assert.IsTrue(new Envelope(-110, 100, -110, 100).Contains(tree.Extent));
 
-            //tree = SbnTree.Create(new List<Tuple<uint, SharpSbn.DataStructures.Envelope>>(tree.QueryFids(tree.Extent)))
+            //tree = SbnTree.Create(new List<Tuple<uint, Envelope>>(tree.QueryFids(tree.Extent)))
         }
 
         private bool _rebuildRequiredFired;
@@ -425,10 +383,10 @@ namespace SbnSharp.Test
         [Test]
         public void TestCreateAndExtendByMassiveNumber()
         {
-            _data = CreateSampleData(50000, new SharpSbn.DataStructures.Envelope(-100, 100, -100, 100));
+            _data = CreateSampleData(50000, new Envelope(-100, 100, -100, 100));
             var tree = SbnTree.Create(_data, null, null);
             Assert.That(tree.FeatureCount == 50000);
-            foreach (var tuple in CreateSampleData(50000, new SharpSbn.DataStructures.Envelope(-100, 100, -100, 100), 50001))
+            foreach (var tuple in CreateSampleData(50000, new Envelope(-100, 100, -100, 100), 50001))
                 tree.Insert(tuple.Item1, tuple.Item2, null, null);
             Assert.IsTrue(tree.FeatureCount == 100000);
         }
@@ -436,40 +394,41 @@ namespace SbnSharp.Test
         [Test]
         public void TestCreateAndExtendByMassiveNumberZ()
         {
-            _data = CreateSampleData(50000, new SharpSbn.DataStructures.Envelope(-100, 100, -100, 100));
-            var zRange = SharpSbn.DataStructures.Interval.Create(1, 10);
+            _data = CreateSampleData(50000, new Envelope(-100, 100, -100, 100));
+            var zRange = Interval.Create(1, 10);
             var tree = SbnTree.Create(_data, zRange, null);
             Assert.AreEqual(zRange, tree.ZRange);
             
-            foreach (var tuple in CreateSampleData(50000, new SharpSbn.DataStructures.Envelope(-100, 100, -100, 100), 50001))
-                tree.Insert(tuple.Item1, tuple.Item2, CreateInterval(SharpSbn.DataStructures.Interval.Create(0, 20)), null);
+            foreach (var tuple in CreateSampleData(50000, new Envelope(-100, 100, -100, 100), 50001))
+                tree.Insert(tuple.Item1, tuple.Item2, CreateInterval(Interval.Create(0, 20)), null);
             Assert.IsTrue(tree.FeatureCount == 100000);
             Assert.IsTrue(tree.ZRange.Min < 1d);
             Assert.IsTrue(tree.ZRange.Max > 10d);
-            Assert.IsTrue(SharpSbn.DataStructures.Interval.Create(0, 20).Contains(tree.ZRange));
+            Assert.IsTrue(Interval.Create(0, 20).Contains(tree.ZRange));
         }
 
         [Test]
         public void TestCreateAndExtendByMassiveNumberZM()
         {
-            _data = CreateSampleData(50000, new SharpSbn.DataStructures.Envelope(-100, 100, -100, 100));
-            var zRange = SharpSbn.DataStructures.Interval.Create(1, 10);
-            var mRange = SharpSbn.DataStructures.Interval.Create(10, 100);
+            _data = CreateSampleData(50000, new Envelope(-100, 100, -100, 100));
+            var zRange = Interval.Create(1, 10);
+            var mRange = Interval.Create(10, 100);
             var tree = SbnTree.Create(_data, zRange, mRange);
             Assert.AreEqual(zRange, tree.ZRange);
             Assert.AreEqual(mRange, tree.MRange);
 
-            foreach (var tuple in CreateSampleData(50000, new SharpSbn.DataStructures.Envelope(-100, 100, -100, 100), 50001))
+            foreach (var tuple in CreateSampleData(50000, new Envelope(-100, 100, -100, 100), 50001))
                 tree.Insert(tuple.Item1, tuple.Item2, 
-                    CreateInterval(SharpSbn.DataStructures.Interval.Create(0, 20)),
-                    CreateInterval(SharpSbn.DataStructures.Interval.Create(9, 200)));
+                    CreateInterval(Interval.Create(0, 20)),
+                    CreateInterval(Interval.Create(9, 200)));
             Assert.IsTrue(tree.FeatureCount == 100000);
             Assert.IsTrue(tree.ZRange.Min < 1d);
             Assert.IsTrue(tree.ZRange.Max > 10d);
-            Assert.IsTrue(SharpSbn.DataStructures.Interval.Create(0, 20).Contains(tree.ZRange));
+            Assert.IsTrue(Interval.Create(0, 20).Contains(tree.ZRange));
             Assert.IsTrue(tree.MRange.Min < 10d);
             Assert.IsTrue(tree.MRange.Max > 100d);
-            Assert.IsTrue(SharpSbn.DataStructures.Interval.Create(9, 200).Contains(tree.MRange));
+            Assert.IsTrue(Interval.Create(9, 200).Contains(tree.MRange));
         }
     }
 }
+

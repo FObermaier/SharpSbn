@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2016
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{7B7C8ABC-15AF-45AE-A589-84EE4D5ECFE6}"
+	ProjectSection(SolutionItems) = preProject
+		SharpSbn.Common.props = SharpSbn.Common.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Spec", "Spec", "{ABB16554-3F14-4E7E-A1A7-FC72FF3DF9D8}"
+	ProjectSection(SolutionItems) = preProject
+		Spec\sbn_format.pdf = Spec\sbn_format.pdf
+		Spec\sbx_format.pdf = Spec\sbx_format.pdf
+	EndProjectSection
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "hasbeen", "hasbeen.pyproj", "{86B250BB-F515-45E8-93BD-15810BC4CF49}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpSbn", "SharpSbn\SharpSbn.csproj", "{E3304F5C-2C53-497D-B621-847F9D007D67}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSbn.Test", "test\SharpSbn.Test.csproj", "{C05CE679-851D-4542-98B9-051A7F46F2BF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpSbn.GeoAPI", "SharpSbn.GeoAPI\SharpSbn.GeoAPI.csproj", "{33887FA2-09CE-4920-BC95-0DAEB00CCD20}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{86B250BB-F515-45E8-93BD-15810BC4CF49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86B250BB-F515-45E8-93BD-15810BC4CF49}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3304F5C-2C53-497D-B621-847F9D007D67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3304F5C-2C53-497D-B621-847F9D007D67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3304F5C-2C53-497D-B621-847F9D007D67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3304F5C-2C53-497D-B621-847F9D007D67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C05CE679-851D-4542-98B9-051A7F46F2BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33887FA2-09CE-4920-BC95-0DAEB00CCD20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33887FA2-09CE-4920-BC95-0DAEB00CCD20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33887FA2-09CE-4920-BC95-0DAEB00CCD20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33887FA2-09CE-4920-BC95-0DAEB00CCD20}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5E479A7C-2A17-43FA-83B7-55BB991EC3EE}
+	EndGlobalSection
+EndGlobal
