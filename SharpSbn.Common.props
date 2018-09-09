@@ -19,6 +19,8 @@
     <PackageLicenseUrl>https://raw.githubusercontent.com/FObermaier/SbnSharp/master/LICENSE.txt</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/fobermaier/SbnSharp</PackageProjectUrl>
     <RootNamespace>SharpSbn</RootNamespace>
+    <PackageTags>sbn shapefile spatial index</PackageTags>
+    <Description>Implementation of ESRI's spatial index for shapefiles. Based on the hasbeen project by drwelby</Description>
   </PropertyGroup>
 
 </Project>
