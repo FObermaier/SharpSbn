@@ -14,10 +14,10 @@
     <Authors>Felix Obermaier</Authors>
     <Company></Company>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/fobermaier/SbnSharp.git</RepositoryUrl>
+    <RepositoryUrl>https://github.com/fobermaier/SharpSbn.git</RepositoryUrl>
     <PackageIconUrl></PackageIconUrl>
-    <PackageLicenseUrl>https://raw.githubusercontent.com/FObermaier/SbnSharp/master/LICENSE.txt</PackageLicenseUrl>
-    <PackageProjectUrl>https://github.com/fobermaier/SbnSharp</PackageProjectUrl>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/FObermaier/SharpSbn/master/LICENSE.txt</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/fobermaier/SharpSbn</PackageProjectUrl>
     <RootNamespace>SharpSbn</RootNamespace>
     <PackageTags>sbn shapefile spatial index</PackageTags>
     <Description>Implementation of ESRI's spatial index for shapefiles. Based on the hasbeen project by drwelby</Description>
